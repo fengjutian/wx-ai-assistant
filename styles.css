@@ -1,0 +1,16 @@
+html,body,#container { height: 100%; margin: 0; padding: 0; }
+#container { display: flex; height: 100vh; font-family: Arial, Helvetica, sans-serif; }
+#left { flex: 1.6; display: flex; flex-direction: column; border-right: 1px solid #ddd; }
+#right { flex: 1; display: flex; flex-direction: column; }
+#nav-bar { padding: 8px; display:flex; gap:8px; align-items:center; }
+#nav-bar input { flex:1; padding:6px; }
+#nav-bar button { padding:6px 10px }
+#webview { flex:1; border: none; }
+#chat-area { display:flex; flex-direction:column; height:100%; }
+#messages { flex:1; overflow:auto; padding:12px; }
+.message { margin-bottom:10px; padding:8px; border-radius:8px; max-width: 90%; }
+.message.user { background:#e6f7ff; align-self:flex-end; }
+.message.bot { background:#f5f5f5; align-self:flex-start; }
+#controls { padding:8px; display:flex; gap:8px; }
+#controls textarea { flex:1; padding:8px; resize:vertical }
+#controls button { padding:8px 12px }
