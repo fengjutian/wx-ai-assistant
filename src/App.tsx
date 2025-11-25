@@ -157,7 +157,6 @@ const App: React.FC = () => {
       
       {appLoaded && (
         <>
-          {/* 在开发环境中显示提示信息 */}
           {!isElectron && (
             <div style={{ 
               padding: '10px', 
@@ -171,7 +170,6 @@ const App: React.FC = () => {
           
           <div id="left">
             {websiteUrlInput()}
-            {/* 在Electron环境中使用webview元素，否则使用iframe作为替代 */}
             {isElectron ? (
               <webview
                 ref={webviewRef}
