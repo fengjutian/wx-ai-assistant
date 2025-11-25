@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain  } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -15,7 +15,7 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webviewTag: true
+      webviewTag: true,
     },
   });
 
@@ -23,9 +23,7 @@ const createWindow = () => {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
   // Open the DevTools.
@@ -48,16 +46,13 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+        Authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: [
-          ...(history || []),
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 800
-      })
+        messages: [...(history || []), { role: 'user', content: prompt }],
+        max_tokens: 800,
+      }),
     });
 
     if (!res.ok) {
@@ -67,7 +62,10 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
 
     const json = await res.json();
     // 根据调用的 API 不同，返回路径会不同。以下基于 OpenAI ChatCompletion 格式
-    const assistantMsg = json.choices && json.choices[0] && json.choices[0].message ? json.choices[0].message.content : (json.result || JSON.stringify(json));
+    const assistantMsg =
+      json.choices && json.choices[0] && json.choices[0].message
+        ? json.choices[0].message.content
+        : json.result || JSON.stringify(json);
 
     return { text: assistantMsg, raw: json };
   } catch (err) {
