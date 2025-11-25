@@ -1,10 +1,9 @@
-// 在文件顶部加载环境变量
 import dotenv from 'dotenv';
-dotenv.config();
-
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+
+dotenv.config();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
