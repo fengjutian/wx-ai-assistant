@@ -9,9 +9,4 @@ export default defineConfig({
   server: {
     port: 9000,
   },
-  build: {
-    rollupOptions: {
-      input: 'src/renderer.tsx',
-    },
-  },
 });

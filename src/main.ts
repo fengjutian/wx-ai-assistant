@@ -30,8 +30,18 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // 打开DevTools并配置以捕获所有日志
+  // 注意：Autofill相关错误是Electron DevTools的常见警告，不影响应用功能
+  // 生产环境中可以不打开DevTools
+  mainWindow.webContents.openDevTools({
+    mode: 'detach', // 分离模式打开DevTools，方便查看日志
+    activate: true  // 自动激活DevTools
+  });
+  
+  // 捕获渲染进程的控制台消息并输出到主进程控制台
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[渲染进程] ${message} (${sourceId}:${line})`);
+  });
 };
 
 // 处理渲染进程的模型调用请求（使用 ipcMain.handle）
