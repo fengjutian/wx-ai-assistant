@@ -5,6 +5,7 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "skipLibCheck": true,
+    "noLib": false,
     "esModuleInterop": true,
     "noImplicitAny": true,
     "strict": true,
