@@ -9,7 +9,6 @@ const sendBtn = document.getElementById('send');
 const promptInput = document.getElementById('prompt');
 const messagesDiv = document.getElementById('messages');
 
-// 简单消息历史（可用来发送上下文给模型）
 const history = [];
 
 function appendMessage(text, cls = 'bot') {
