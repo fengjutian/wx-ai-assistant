@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
+import { XMarkdown } from '@ant-design/x-markdown';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -200,7 +201,11 @@ const App: React.FC = () => {
                 
                 {messages.map((msg, index) => (
                   <div key={index} className={`message ${msg.role}`}>
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <XMarkdown content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 ))}
                 {isLoading && (
