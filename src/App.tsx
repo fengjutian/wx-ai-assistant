@@ -191,7 +191,6 @@ const App: React.FC = () => {
           <div id="right">
             <div id="chat-area">
               <div id="messages">
-                {/* 添加一些示例消息，以便在开发环境中能看到内容 */}
                 {messages.length === 0 && !isLoading && !isElectron && (
                   <div className="message bot">
                     这是开发环境预览 - 您可以在这里看到应用的UI布局。
