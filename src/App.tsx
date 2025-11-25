@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Welcome } from '@ant-design/x';
+import { Welcome, Sender } from '@ant-design/x';
+import SenderComponent  from './components/sender/Sender';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -211,19 +212,15 @@ const App: React.FC = () => {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+              <SenderComponent/>
               <div id="controls">
-                <textarea
-                  id="prompt"
+                <Sender
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={handlePromptKeyDown}
+                  onChange={(val) => setPrompt(val)}
+                  onSubmit={sendMessage}
                   placeholder="向大模型提问..."
-                  rows={3}
                   disabled={isLoading}
                 />
-                <button id="send" onClick={sendMessage} disabled={isLoading}>
-                  发送
-                </button>
               </div>
             </div>
           </div>
