@@ -9,7 +9,7 @@ const sendBtn = document.getElementById('send');
 const promptInput = document.getElementById('prompt');
 const messagesDiv = document.getElementById('messages');
 
-const history = [];
+const history: any[] = [];
 
 function appendMessage(text, cls = 'bot') {
   const d = document.createElement('div');
