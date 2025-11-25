@@ -5,7 +5,7 @@ import './index.css';
 
 const App: React.FC = () => {
   const [url, setUrl] = useState<string>('https://weread.qq.com/');
-  const [webviewSrc, setWebviewSrc] = useState<string>('https://example.com');
+  const [webviewSrc, setWebviewSrc] = useState<string>('https://weread.qq.com/');
   const [prompt, setPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);

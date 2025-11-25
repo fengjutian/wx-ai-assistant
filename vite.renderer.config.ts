@@ -6,6 +6,9 @@ export default defineConfig({
   resolve: {
     preserveSymlinks: true,
   },
+  server: {
+    port: 9000,
+  },
   build: {
     rollupOptions: {
       input: 'src/renderer.tsx',

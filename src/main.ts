@@ -16,6 +16,10 @@ const createWindow = () => {
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
+      // 更全面地禁用可能导致警告的功能
+      disableBlinkFeatures: 'Autofill,AutofillProfiles,AutofillServerCommunication',
+      // 禁用一些可能导致警告的功能
+      spellcheck: false,
     },
   });
 
