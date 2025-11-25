@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
 import { XMarkdown } from '@ant-design/x-markdown';
+import { Welcome } from '@ant-design/x';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -153,7 +154,6 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {/* 应用主界面 */}
       {appLoaded && (
         <>
           {/* 在开发环境中显示提示信息 */}
@@ -192,13 +192,11 @@ const App: React.FC = () => {
           <div id="right">
             <div id="chat-area">
               <div id="messages">
-                {messages.length === 0 && !isLoading && !isElectron && (
-                  <div className="message bot">
-                    这是开发环境预览 - 您可以在这里看到应用的UI布局。
-                    在实际的Electron应用中，这里将显示AI助手的回复。
-                  </div>
-                )}
-                
+                <Welcome
+                  icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+                  title="Hello, 我是你的阅读助手"
+                  description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
+                />
                 {messages.map((msg, index) => (
                   <div key={index} className={`message ${msg.role}`}>
                     {msg.role === 'assistant' ? (
