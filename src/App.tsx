@@ -2,14 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
 
+const WEIXINURL = 'https://weread.qq.com/';
 
 const App: React.FC = () => {
-  const [url, setUrl] = useState<string>('https://weread.qq.com/');
-  const [webviewSrc, setWebviewSrc] = useState<string>('https://weread.qq.com/');
+  const [url, setUrl] = useState<string>(WEIXINURL);
+  const [webviewSrc, setWebviewSrc] = useState<string>(WEIXINURL);
   const [prompt, setPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [appLoaded, setAppLoaded] = useState<boolean>(false); // 跟踪应用加载状态
+  const [appLoaded, setAppLoaded] = useState<boolean>(false);
   const webviewRef = useRef<HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -75,13 +76,12 @@ const App: React.FC = () => {
     setWebviewSrc(finalUrl);
   };
 
-  // 发送消息
   const sendMessage = async () => {
     const text = prompt.trim();
     if (!text) return;
 
     const newUserMessage: Message = { role: 'user', content: text };
-    // 立即更新消息列表并获取最新状态
+
     setMessages(prev => [...prev, newUserMessage]);
     setPrompt('');
     setIsLoading(true);
@@ -108,10 +108,10 @@ const App: React.FC = () => {
     }
   };
 
-  // 处理输入框回车事件
-  const handleUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') navigateTo();
-  };
+
+  // const handleUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (e.key === 'Enter') navigateTo();
+  // };
 
   const handlePromptKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -119,6 +119,22 @@ const App: React.FC = () => {
       sendMessage();
     }
   };
+
+  const websiteUrlInput = () => (
+    <div></div>
+    // <div id="nav-bar">
+    //   <input
+    //     id="url-input"
+    //     type="text"
+    //     value={url}
+    //     onChange={(e) => setUrl(e.target.value)}
+    //     onKeyDown={handleUrlKeyDown}
+    //     placeholder="输入 URL 并按回车 (例如 https://example.com)"
+    //   />
+    //   <button id="go-btn" onClick={navigateTo}>Go</button>
+    // </div>
+  );
+  
 
   return (
     <div id="container" style={{ backgroundColor: '#f5f5f5' }}>
@@ -152,17 +168,7 @@ const App: React.FC = () => {
           )}
           
           <div id="left">
-            <div id="nav-bar">
-              <input
-                id="url-input"
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={handleUrlKeyDown}
-                placeholder="输入 URL 并按回车 (例如 https://example.com)"
-              />
-              <button id="go-btn" onClick={navigateTo}>Go</button>
-            </div>
+            {websiteUrlInput()}
             {/* 在Electron环境中使用webview元素，否则使用iframe作为替代 */}
             {isElectron ? (
               <webview
@@ -209,7 +215,7 @@ const App: React.FC = () => {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handlePromptKeyDown}
-                  placeholder="向大模型提问...(Ctrl+Enter 发送)"
+                  placeholder="向大模型提问..."
                   rows={3}
                   disabled={isLoading}
                 />

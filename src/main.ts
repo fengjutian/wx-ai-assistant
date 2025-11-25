@@ -48,7 +48,6 @@ const createWindow = () => {
 // 请在环境变量中配置 MODEL_API_KEY 并在这里使用（不要把密钥写到客户端）
 // 下面示例展示如何调用通用 REST 接口（以 OpenAI 风格为例），用户需替换为实际的大模型 API
 ipcMain.handle('model:chat', async (event, { prompt, history }) => {
-  // basic validation
   if (!prompt || typeof prompt !== 'string') return { error: 'invalid prompt' };
 
   const API_KEY = process.env.MODEL_API_KEY || '';
@@ -105,6 +104,3 @@ app.on('activate', () => {
     createWindow();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
