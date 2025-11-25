@@ -1,4 +1,8 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+// 在文件顶部加载环境变量
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -50,21 +54,33 @@ const createWindow = () => {
 ipcMain.handle('model:chat', async (event, { prompt, history }) => {
   if (!prompt || typeof prompt !== 'string') return { error: 'invalid prompt' };
 
+  // 调试日志 - 检查环境变量是否被加载
+  console.log('Environment Variables:');
+  console.log('- MODEL_API_KEY exists:', !!process.env.MODEL_API_KEY);
+  console.log('- MODEL_URL:', process.env.MODEL_URL || 'not set');
+  console.log('- MODEL_NAME:', process.env.MODEL_NAME || 'not set');
+  
   const API_KEY = process.env.MODEL_API_KEY || '';
   if (!API_KEY) return { error: 'MODEL_API_KEY not set in environment' };
 
   try {
+    // 使用正确的Moonshot API路径和格式
+    // const apiUrl = process.env.MODEL_URL === 'https://api.moonshot.cn/v1' 
+    //   ? 'https://api.moonshot.cn/v1/chat/completions' 
+    //   : process.env.MODEL_URL || '';
+    
     // Node 18+ 自带 fetch
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(process.env.MODEL_URL || '', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
         messages: [...(history || []), { role: 'user', content: prompt }],
         max_tokens: 800,
+        temperature: 0.3,
       }),
     });
 
@@ -74,7 +90,7 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
     }
 
     const json = await res.json();
-    // 根据调用的 API 不同，返回路径会不同。以下基于 OpenAI ChatCompletion 格式
+    // 处理Moonshot API响应格式
     const assistantMsg =
       json.choices && json.choices[0] && json.choices[0].message
         ? json.choices[0].message.content
@@ -88,9 +104,6 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
 
 app.on('ready', createWindow);
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
