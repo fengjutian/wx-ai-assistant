@@ -26,16 +26,16 @@ const AgentInfo: {
     icon: <SearchOutlined />,
     label: 'Deep Search',
     slotConfig: [
-      { type: 'text', value: 'Please help me search for news about ' },
-      {
-        type: 'select',
-        key: 'search_type',
-        props: {
-          options: ['AI', 'Technology', 'Entertainment'],
-          placeholder: 'Please select a category',
-        },
-      },
-      { type: 'text', value: ' and summarize it into a list.' },
+      // { type: 'text', value: 'Please help me search for news about ' },
+      // {
+      //   type: 'select',
+      //   key: 'search_type',
+      //   props: {
+      //     options: ['AI', 'Technology', 'Entertainment'],
+      //     placeholder: 'Please select a category',
+      //   },
+      // },
+      // { type: 'text', value: ' and summarize it into a list.' },
     ],
   },
   ai_code: {

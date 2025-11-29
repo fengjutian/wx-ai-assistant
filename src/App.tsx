@@ -1,14 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Message, ModelResponse } from './preload';
+import { Message } from './preload';
 import './index.css';
-import { XMarkdown } from '@ant-design/x-markdown';
-import { Welcome, Sender } from '@ant-design/x';
-import SenderComponent  from './components/sender/Sender';
+import AssistantDashboard from './components/assistant_dashboard';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
 const App: React.FC = () => {
-  const [url, setUrl] = useState<string>(WEIXINURL);
   const [webviewSrc, setWebviewSrc] = useState<string>(WEIXINURL);
   const [prompt, setPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -70,15 +67,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // 导航到URL
-  const navigateTo = () => {
-    let finalUrl = url.trim();
-    if (!/^https?:\/\//i.test(finalUrl)) {
-      finalUrl = 'https://' + finalUrl;
-    }
-    setWebviewSrc(finalUrl);
-  };
-
   const sendMessage = async () => {
     const text = prompt.trim();
     if (!text) return;
@@ -111,34 +99,6 @@ const App: React.FC = () => {
     }
   };
 
-
-  // const handleUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  //   if (e.key === 'Enter') navigateTo();
-  // };
-
-  const handlePromptKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const websiteUrlInput = () => (
-    <div></div>
-    // <div id="nav-bar">
-    //   <input
-    //     id="url-input"
-    //     type="text"
-    //     value={url}
-    //     onChange={(e) => setUrl(e.target.value)}
-    //     onKeyDown={handleUrlKeyDown}
-    //     placeholder="输入 URL 并按回车 (例如 https://example.com)"
-    //   />
-    //   <button id="go-btn" onClick={navigateTo}>Go</button>
-    // </div>
-  );
-  
-
   return (
     <div id="container" style={{ backgroundColor: '#f5f5f5' }}>
       {/* 显示加载状态 */}
@@ -169,7 +129,6 @@ const App: React.FC = () => {
           )}
           
           <div id="left">
-            {websiteUrlInput()}
             {isElectron ? (
               <webview
                 ref={webviewRef}
@@ -189,38 +148,14 @@ const App: React.FC = () => {
           </div>
 
           <div id="right">
-            <div id="chat-area">
-              <div id="messages">
-                <Welcome
-                  icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
-                  title="等不及了，赶紧上车，系好安全带"
-                  description="Can't wait—hurry and get in the car, and buckle up"
-                />
-                {messages.map((msg, index) => (
-                  <div key={index} className={`message ${msg.role}`}>
-                    {msg.role === 'assistant' ? (
-                      <XMarkdown content={msg.content} />
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="message bot">正在请求模型，请稍候...</div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-              <SenderComponent/>
-              <div id="controls">
-                <Sender
-                  value={prompt}
-                  onChange={(val) => setPrompt(val)}
-                  onSubmit={sendMessage}
-                  placeholder="向大模型提问..."
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <AssistantDashboard
+              messages={messages}
+              isLoading={isLoading}
+              messagesEndRef={messagesEndRef}
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              onSubmit={sendMessage}
+            />
           </div>
         </>
       )}
