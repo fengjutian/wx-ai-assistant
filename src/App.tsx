@@ -193,8 +193,8 @@ const App: React.FC = () => {
               <div id="messages">
                 <Welcome
                   icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
-                  title="Hello, 我是你的阅读助手"
-                  description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
+                  title="等不及了，赶紧上车，系好安全带"
+                  description="Can't wait—hurry and get in the car, and buckle up"
                 />
                 {messages.map((msg, index) => (
                   <div key={index} className={`message ${msg.role}`}>
