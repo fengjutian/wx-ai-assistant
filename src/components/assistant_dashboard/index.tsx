@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Message } from '../../preload';
 import { XMarkdown } from '@ant-design/x-markdown';
+import { Button } from 'antd';
 import { Welcome } from '@ant-design/x';
 import SenderComponent from '../sender/Sender';
 
@@ -37,7 +38,15 @@ const AssistantDashboard: React.FC<Props> = ({
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.role}`}>
             {msg.role === 'assistant' ? (
-              <XMarkdown content={msg.content} />
+              <>
+                <XMarkdown content={msg.content} />
+                <div style={{ marginTop: 8 }}>
+                  <Button size="small" onClick={async () => {
+                    const name = `assistant-${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
+                    await window.api?.saveContent?.({ suggestedName: name, content: msg.content });
+                  }}>保存到本地</Button>
+                </div>
+              </>
             ) : (
               msg.content
             )}

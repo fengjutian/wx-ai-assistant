@@ -18,6 +18,7 @@ export interface ElectronAPI {
   getModelConfig: () => Promise<{ apiKey: string; url: string; name: string }>;
   setModelConfig: (cfg: { apiKey?: string; url?: string; name?: string }) => Promise<{ ok: boolean }>;
   resetModelConfig: () => Promise<{ ok: boolean }>;
+  saveContent: (payload: { suggestedName?: string; content: string }) => Promise<{ ok?: boolean; path?: string; error?: string }>;
 }
 
 // 暴露API给渲染进程
@@ -40,6 +41,9 @@ contextBridge.exposeInMainWorld('api', {
   },
   resetModelConfig: async () => {
     return await ipcRenderer.invoke('config:reset');
+  },
+  saveContent: async (payload: { suggestedName?: string; content: string }) => {
+    return await ipcRenderer.invoke('content:save', payload);
   },
 });
 

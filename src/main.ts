@@ -183,6 +183,24 @@ ipcMain.handle('config:reset', async () => {
   return { ok: true };
 });
 
+ipcMain.handle('content:save', async (event, {
+  suggestedName,
+  content,
+}: { suggestedName?: string; content: string }) => {
+  const defaultPath = path.join(app.getPath('documents'), suggestedName || `assistant-${Date.now()}.md`);
+  const result = await dialog.showSaveDialog({
+    title: '保存到本地',
+    defaultPath,
+    filters: [
+      { name: 'Markdown', extensions: ['md'] },
+      { name: 'Text', extensions: ['txt'] },
+    ],
+  });
+  if (result.canceled || !result.filePath) return { error: 'canceled' };
+  await fs.writeFile(result.filePath, content, 'utf-8');
+  return { ok: true, path: result.filePath };
+});
+
 app.whenReady().then(async () => {
   const filePath = path.join(app.getPath('userData'), 'model_config.json');
   let content = '';
