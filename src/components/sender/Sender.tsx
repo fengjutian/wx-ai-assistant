@@ -195,7 +195,7 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
   );
 
   return (
-    <Flex vertical gap="middle">
+    <Flex vertical gap="middle" style={{ margin: 10 }}>
       <Sender
         loading={loading}
         ref={senderRef}

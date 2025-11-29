@@ -80,6 +80,7 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
         messages: [...(history || []), { role: 'user', content: prompt }],
         max_tokens: 800,
         temperature: 0.3,
+        stream: true,
       }),
     });
 
