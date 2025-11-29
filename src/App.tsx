@@ -99,6 +99,64 @@ const App: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isElectron) return;
+    const webview = webviewRef.current as any;
+    if (!webview) return;
+    const onConsoleMessage = (e: any) => {
+      const msg = e.message || '';
+      const prefix = '__WX_COPY__:';
+      if (typeof msg === 'string' && msg.startsWith(prefix)) {
+        const text = msg.slice(prefix.length).trim();
+        if (text) setPrompt(text);
+      }
+    };
+    const inject = () => {
+      try {
+        webview.executeJavaScript(`(function(){
+          if (window.__wx_copy_hook__) return;
+          window.__wx_copy_hook__ = true;
+          const emit = (t) => { try { console.log('__WX_COPY__:' + String(t || '').trim()); } catch(_){} };
+          document.addEventListener('copy', function(e){
+            let s = '';
+            try { s = e.clipboardData && e.clipboardData.getData && e.clipboardData.getData('text/plain') || ''; } catch(_){ }
+            if (!s) { try { s = (window.getSelection && window.getSelection().toString()) || ''; } catch(_){ }
+            }
+            s = String(s || '').trim();
+            if (s) emit(s);
+          }, true);
+        })();`);
+      } catch (_) { void 0; }
+    };
+    webview.addEventListener('console-message', onConsoleMessage);
+    const onDomReady = () => inject();
+    const onDidNavigate = () => inject();
+    const onDidStopLoading = () => inject();
+    webview.addEventListener('dom-ready', onDomReady);
+    webview.addEventListener('did-navigate', onDidNavigate);
+    webview.addEventListener('did-stop-loading', onDidStopLoading);
+    inject();
+    return () => {
+      try {
+        webview.removeEventListener('console-message', onConsoleMessage);
+        webview.removeEventListener('dom-ready', onDomReady);
+        webview.removeEventListener('did-navigate', onDidNavigate);
+        webview.removeEventListener('did-stop-loading', onDidStopLoading);
+      } catch (_) { void 0; }
+    };
+  }, [isElectron]);
+
+  const handleCaptureSelection = async () => {
+    if (!isElectron) return;
+    const webview = webviewRef.current as any;
+    if (!webview) return;
+    try {
+      const text = await webview.executeJavaScript('String((window.getSelection && window.getSelection().toString()) || "")');
+      const t = String(text || '').trim();
+      if (t) setPrompt(t);
+    } catch (_) { void 0; }
+  };
+
   return (
     <div id="container" style={{ backgroundColor: '#f5f5f5' }}>
       {/* 显示加载状态 */}
@@ -106,7 +164,7 @@ const App: React.FC = () => {
         <div style={{ 
           display: 'flex', 
           justifyContent: 'center', 
-          alignItems: 'center', 
+          alignItems: 'center',
           height: '100vh',
           fontSize: '18px',
           color: '#333'
@@ -155,6 +213,7 @@ const App: React.FC = () => {
               prompt={prompt}
               onPromptChange={setPrompt}
               onSubmit={sendMessage}
+              onCaptureSelection={handleCaptureSelection}
             />
           </div>
         </>

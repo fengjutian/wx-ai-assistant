@@ -12,6 +12,7 @@ type Props = {
   prompt: string;
   onPromptChange: (val: string) => void;
   onSubmit: () => void;
+  onCaptureSelection?: () => void;
 };
 
 const AssistantDashboard: React.FC<Props> = ({
@@ -21,6 +22,7 @@ const AssistantDashboard: React.FC<Props> = ({
   prompt,
   onPromptChange,
   onSubmit,
+  onCaptureSelection,
 }) => {
   useEffect(() => {
     if (!isLoading) {
@@ -60,7 +62,9 @@ const AssistantDashboard: React.FC<Props> = ({
       <SenderComponent
         prompt={prompt}
         onPromptChange={onPromptChange}
-        onSubmit={onSubmit} />
+        onSubmit={onSubmit}
+        onCaptureSelection={onCaptureSelection}
+      />
     </div>
   );
 };

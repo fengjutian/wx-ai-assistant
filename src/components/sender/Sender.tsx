@@ -108,9 +108,10 @@ type SenderComponentProps = {
   onPromptChange?: (val: string) => void;
   prompt?: string;
   onSubmit?: (val: string) => void;
+  onCaptureSelection?: () => void;
 };
 
-const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, prompt, onSubmit }) => {
+const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, prompt, onSubmit, onCaptureSelection }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [deepThink, setDeepThink] = useState<boolean>(true);
   const [activeAgentKey, setActiveAgentKey] = useState('deep_search');
@@ -264,6 +265,7 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
               </Flex>
               <Flex align="center">
                 <Button type="text" style={IconStyle} icon={<ApiOutlined />} onClick={() => setSettingsOpen(true)} />
+                <Button type="text" onClick={() => onCaptureSelection?.()}>抓取选区</Button>
                 <Divider orientation="vertical" />
                 {actionNode}
               </Flex>
