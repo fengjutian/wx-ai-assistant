@@ -302,6 +302,19 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
         }}
       >
         <Form layout="vertical">
+          <Button
+            style={{ marginBottom: 12 }}
+            onClick={async () => {
+              await window.api?.resetModelConfig?.();
+              const cfg = await window.api?.getModelConfig?.();
+              setApiKey(cfg?.apiKey || '');
+              setModelUrl(cfg?.url || '');
+              setModelName(cfg?.name || '');
+              message.success('已重置为 .env 默认值');
+            }}
+          >
+            重置为 .env 默认值
+          </Button>
           <Form.Item label="API Key">
             <Input.Password value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="输入模型 API Key" />
           </Form.Item>

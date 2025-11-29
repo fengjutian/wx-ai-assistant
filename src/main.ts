@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -124,10 +125,40 @@ ipcMain.handle('config:update', async (event, cfg: Partial<ModelConfig>) => {
     url: cfg.url ?? modelConfig.url,
     name: cfg.name ?? modelConfig.name,
   };
+  const filePath = path.join(app.getPath('userData'), 'model_config.json');
+  await fs.writeFile(filePath, JSON.stringify(modelConfig), 'utf-8');
   return { ok: true };
 });
 
-app.on('ready', createWindow);
+ipcMain.handle('config:reset', async () => {
+  modelConfig = {
+    apiKey: process.env.MODEL_API_KEY || '',
+    url: process.env.MODEL_URL || '',
+    name: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+  };
+  const filePath = path.join(app.getPath('userData'), 'model_config.json');
+  await fs.writeFile(filePath, JSON.stringify(modelConfig), 'utf-8');
+  return { ok: true };
+});
+
+app.whenReady().then(async () => {
+  const filePath = path.join(app.getPath('userData'), 'model_config.json');
+  let content = '';
+  try {
+    content = await fs.readFile(filePath, 'utf-8');
+  } catch {
+    await fs.writeFile(filePath, JSON.stringify(modelConfig), 'utf-8');
+  }
+  if (content) {
+    const parsed = JSON.parse(content);
+    modelConfig = {
+      apiKey: parsed.apiKey ?? modelConfig.apiKey,
+      url: parsed.url ?? modelConfig.url,
+      name: parsed.name ?? modelConfig.name,
+    };
+  }
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
