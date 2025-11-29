@@ -45,7 +45,6 @@ try {
   setTimeout(() => {
     const renderedContent = document.getElementById('app')?.innerHTML;
     console.log('📊 渲染后的内容长度:', renderedContent?.length || 0);
-    console.log('📊 渲染后的内容:', renderedContent);
   }, 1000);
 } catch (error) {
   console.error('❌ 渲染App组件时出错:', error);

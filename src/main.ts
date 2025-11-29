@@ -71,28 +71,35 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
   console.log('- MODEL_API_KEY exists:', !!process.env.MODEL_API_KEY);
   console.log('- MODEL_URL:', process.env.MODEL_URL || 'not set');
   console.log('- MODEL_NAME:', process.env.MODEL_NAME || 'not set');
-  
+
   const API_KEY = modelConfig.apiKey || process.env.MODEL_API_KEY || '';
   if (!API_KEY) return { error: 'MODEL_API_KEY not set in environment' };
 
   try {
     // 使用正确的Moonshot API路径和格式
-    // const apiUrl = process.env.MODEL_URL === 'https://api.moonshot.cn/v1' 
-    //   ? 'https://api.moonshot.cn/v1/chat/completions' 
+    // const apiUrl = process.env.MODEL_URL === 'https://api.moonshot.cn/v1'
+    //   ? 'https://api.moonshot.cn/v1/chat/completions'
     //   : process.env.MODEL_URL || '';
-    
+
     // Node 18+ 自带 fetch
+    // 发起聊天请求到模型接口（Moonshot/OpenAI 风格）
+    // 注意：开启 stream:true 后返回为 SSE（text/event-stream），下方已做流式解析
+    // URL 应指向完整的 chat/completions 端点，且不要打印或泄露 API Key
     const res = await fetch(modelConfig.url || process.env.MODEL_URL || '', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${API_KEY}`,
       },
+      // 请求体为标准 Chat Completions 参数
       body: JSON.stringify({
+        // 模型名称需有效，如 kimi-k2-0905-preview；可通过设置弹窗修改
         model: modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+        // 消息数组必须包含 role 与 content，历史记录在渲染层传入
         messages: [...(history || []), { role: 'user', content: prompt }],
         max_tokens: 800,
         temperature: 0.3,
+        // 开启流式返回，服务端将以 data: JSON 的 SSE 片段返回
         stream: true,
       }),
     });
@@ -102,14 +109,49 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
       return { error: `api error: ${res.status} ${text}` };
     }
 
-    const json = await res.json();
-    // 处理Moonshot API响应格式
-    const assistantMsg =
-      json.choices && json.choices[0] && json.choices[0].message
-        ? json.choices[0].message.content
-        : json.result || JSON.stringify(json);
-
-    return { text: assistantMsg, raw: json };
+    const ct = res.headers.get('content-type') || '';
+    const isSSE = ct.includes('text/event-stream');
+    if (isSSE && (res.body as any)?.getReader) {
+      const reader = (res.body as any).getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let lastObj: any = null;
+      let out = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const l = line.trim();
+          if (!l.startsWith('data:')) continue;
+          const payload = l.slice(5).trim();
+          if (!payload) continue;
+          if (payload === '[DONE]') {
+            buffer = '';
+            break;
+          }
+          try {
+            const obj = JSON.parse(payload);
+            lastObj = obj;
+            const piece = (obj.choices && obj.choices[0] && obj.choices[0].delta && obj.choices[0].delta.content)
+              || (obj.choices && obj.choices[0] && obj.choices[0].message && obj.choices[0].message.content)
+              || obj.result
+              || '';
+            if (piece) out += piece;
+          } catch { continue; }
+        }
+      }
+      return { text: out, raw: lastObj };
+    } else {
+      const json = await res.json();
+      const assistantMsg =
+        json.choices && json.choices[0] && json.choices[0].message
+          ? json.choices[0].message.content
+          : json.result || JSON.stringify(json);
+      return { text: assistantMsg, raw: json };
+    }
   } catch (err) {
     return { error: err.message };
   }
