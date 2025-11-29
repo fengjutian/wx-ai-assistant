@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Message } from '../../preload';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Welcome, Sender } from '@ant-design/x';
+import { Welcome } from '@ant-design/x';
 import SenderComponent from '../sender/Sender';
 
 type Props = {

@@ -258,6 +258,7 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
         onSubmit={(v) => {
           if (onSubmit) {
             onSubmit(v);
+            senderRef.current?.clear?.();
           } else {
             setLoading(true);
             message.info(`Send message: ${v}`);
