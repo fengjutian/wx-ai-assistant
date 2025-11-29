@@ -193,7 +193,7 @@ const SenderComponent: React.FC = () => {
       <Sender
         loading={loading}
         ref={senderRef}
-        placeholder="Press Enter to send message"
+        placeholder="按回车发送消息"
         header={senderHeader}
         footer={(actionNode) => {
           return (
