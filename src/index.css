@@ -23,7 +23,7 @@ body {
 }
 
 #left {
-  flex: 1.6;
+  flex: none;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #ddd;
@@ -31,10 +31,26 @@ body {
 }
 
 #right {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+#resizer {
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  height: 100%;
+  flex: none;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+#resizer:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 #nav-bar {

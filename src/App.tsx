@@ -11,6 +11,10 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [appLoaded, setAppLoaded] = useState<boolean>(false);
+  const [leftRatio, setLeftRatio] = useState<number>(0.6);
+  const [dragging, setDragging] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
   const webviewRef = useRef<HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -98,6 +102,27 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (ev: MouseEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = ev.clientX - rect.left;
+      let r = x / rect.width;
+      if (r < 0.1) r = 0.1;
+      if (r > 0.9) r = 0.9;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => setLeftRatio(r));
+    };
+    const onUp = () => setDragging(false);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [dragging]);
 
   useEffect(() => {
     if (!isElectron) return;
@@ -205,12 +230,12 @@ const App: React.FC = () => {
   };
 
   return (
-    <div id="container" style={{ backgroundColor: '#f5f5f5' }}>
+    <div id="container" ref={containerRef} style={{ backgroundColor: '#f5f5f5', display: 'flex' }}>
       {/* 显示加载状态 */}
       {!appLoaded && (
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'center', 
+          justifyContent: 'center',
           alignItems: 'center',
           height: '100vh',
           fontSize: '18px',
@@ -233,7 +258,7 @@ const App: React.FC = () => {
             </div>
           )}
           
-          <div id="left">
+          <div id="left" style={{ width: `${Math.round(leftRatio * 100)}%` }}>
             {isElectron ? (
               <webview
                 ref={webviewRef}
@@ -251,8 +276,9 @@ const App: React.FC = () => {
               />
             )}
           </div>
+          <div id="resizer" onMouseDown={(e) => { e.preventDefault(); setDragging(true); }} />
 
-          <div id="right">
+          <div id="right" style={{ width: `${Math.round((1 - leftRatio) * 100)}%` }}>
             <AssistantDashboard
               messages={messages}
               isLoading={isLoading}
@@ -263,6 +289,22 @@ const App: React.FC = () => {
               onCaptureSelection={handleCaptureSelection}
             />
           </div>
+          {dragging && (
+            <div
+              style={{ position: 'fixed', inset: 0, cursor: 'col-resize', zIndex: 999, background: 'transparent' }}
+              onMouseMove={(ev) => {
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (!rect) return;
+                const x = ev.clientX - rect.left;
+                let r = x / rect.width;
+                if (r < 0.1) r = 0.1;
+                if (r > 0.9) r = 0.9;
+                if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                rafRef.current = requestAnimationFrame(() => setLeftRatio(r));
+              }}
+              onMouseUp={() => setDragging(false)}
+            />
+          )}
         </>
       )}
     </div>
