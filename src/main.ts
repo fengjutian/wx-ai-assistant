@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
@@ -199,6 +199,24 @@ ipcMain.handle('content:save', async (event, {
   if (result.canceled || !result.filePath) return { error: 'canceled' };
   await fs.writeFile(result.filePath, content, 'utf-8');
   return { ok: true, path: result.filePath };
+});
+
+ipcMain.handle('clipboard:read', async () => {
+  try {
+    const text = clipboard.readText();
+    return { text };
+  } catch (e: any) {
+    return { error: e?.message || String(e) };
+  }
+});
+
+ipcMain.handle('fs:resolve', async (event, relPath: string) => {
+  try {
+    const p = path.isAbsolute(relPath) ? relPath : path.join(process.cwd(), relPath);
+    return { path: p };
+  } catch (e: any) {
+    return { error: e?.message || String(e) };
+  }
 });
 
 app.whenReady().then(async () => {

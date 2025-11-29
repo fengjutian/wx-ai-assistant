@@ -103,6 +103,16 @@ const App: React.FC = () => {
     if (!isElectron) return;
     const webview = webviewRef.current as any;
     if (!webview) return;
+    (async () => {
+      try {
+        const r = await window.api?.resolveFsPath?.('src/webview-preload.js');
+        const p = r?.path;
+        if (p) {
+          try { webview.setAttribute('preload', p); } catch(_){ void 0; }
+          try { if (webview.getURL && webview.getURL()) { webview.reload(); } } catch(_){ void 0; }
+        }
+      } catch (_) { void 0; }
+    })();
     const onConsoleMessage = (e: any) => {
       const msg = e.message || '';
       const prefix = '__WX_COPY__:';
@@ -117,18 +127,54 @@ const App: React.FC = () => {
           if (window.__wx_copy_hook__) return;
           window.__wx_copy_hook__ = true;
           const emit = (t) => { try { console.log('__WX_COPY__:' + String(t || '').trim()); } catch(_){} };
+          const getSel = () => { try { return String((window.getSelection && window.getSelection().toString()) || '').trim(); } catch(_){ return ''; } };
+          console.log('__WX_COPY_INIT__');
           document.addEventListener('copy', function(e){
             let s = '';
             try { s = e.clipboardData && e.clipboardData.getData && e.clipboardData.getData('text/plain') || ''; } catch(_){ }
-            if (!s) { try { s = (window.getSelection && window.getSelection().toString()) || ''; } catch(_){ }
-            }
+            if (!s) { s = getSel(); }
             s = String(s || '').trim();
             if (s) emit(s);
           }, true);
+          document.addEventListener('cut', function(){
+            const s = getSel();
+            if (s) emit(s);
+          }, true);
+          document.addEventListener('keydown', function(e){
+            const k = (e.key || '').toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && k === 'c') {
+              const s = getSel();
+              if (s) emit(s);
+            }
+          }, true);
+          document.addEventListener('selectionchange', function(){
+            const s = getSel();
+            if (s) { window.__wx_last_sel__ = s; }
+          }, true);
+          document.addEventListener('mouseup', function(){
+            const s = getSel();
+            if (s) emit(s);
+          }, true);
+          try {
+            const orig = (navigator.clipboard && navigator.clipboard.writeText) || null;
+            if (orig) {
+              navigator.clipboard.writeText = function(t){ try { emit(t); } catch(_){ } return orig.call(this, t); };
+            }
+          } catch(_){ }
         })();`);
       } catch (_) { void 0; }
     };
     webview.addEventListener('console-message', onConsoleMessage);
+    const onIpcMessage = (e: any) => {
+      try {
+        const ch = e.channel;
+        if (ch === 'wx-copy') {
+          const text = String((e.args && e.args[0]) || '').trim();
+          if (text) { setPrompt(text); setPromptKey((k) => k + 1); }
+        }
+      } catch (_) { void 0; }
+    };
+    webview.addEventListener('ipc-message', onIpcMessage);
     const onDomReady = () => inject();
     const onDidNavigate = () => inject();
     const onDidStopLoading = () => inject();
@@ -142,6 +188,7 @@ const App: React.FC = () => {
         webview.removeEventListener('dom-ready', onDomReady);
         webview.removeEventListener('did-navigate', onDidNavigate);
         webview.removeEventListener('did-stop-loading', onDidStopLoading);
+        webview.removeEventListener('ipc-message', onIpcMessage);
       } catch (_) { void 0; }
     };
   }, [isElectron]);

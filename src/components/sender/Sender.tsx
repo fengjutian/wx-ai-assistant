@@ -214,6 +214,20 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
     </Sender.Header>
   );
 
+  useEffect(() => {
+    try {
+      const el = (senderRef as any)?.current?.nativeElement as HTMLElement | undefined;
+      if (!el) return;
+      const ta = el.querySelector('textarea') as HTMLTextAreaElement | null;
+      if (ta) {
+        ta.value = String(prompt || '');
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    } catch {
+      // ignore
+    }
+  }, [prompt]);
+
   return (
     <Flex vertical gap="middle" style={{ margin: 10 }}>
       <Sender
