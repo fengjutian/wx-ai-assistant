@@ -10,7 +10,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { Attachments, AttachmentsProps, Sender, SenderProps } from '@ant-design/x';
-import { Button, Divider, Dropdown, Flex, GetRef, MenuProps, message } from 'antd';
+import { Button, Divider, Dropdown, Flex, GetRef, MenuProps, message, Modal, Input, Form } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
 const Switch = Sender.Switch;
@@ -115,6 +115,10 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
   const [deepThink, setDeepThink] = useState<boolean>(true);
   const [activeAgentKey, setActiveAgentKey] = useState('deep_search');
   const [fileList, setFileList] = useState<AttachmentsProps['items']>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [modelUrl, setModelUrl] = useState('');
+  const [modelName, setModelName] = useState('');
   const agentItems: MenuProps['items'] = Object.keys(AgentInfo).map((agent) => {
     const { icon, label } = AgentInfo[agent];
     return {
@@ -170,6 +174,21 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
       };
     }
   }, [loading]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cfg = await window.api?.getModelConfig?.();
+        if (cfg) {
+          setApiKey(cfg.apiKey || '');
+          setModelUrl(cfg.url || '');
+          setModelName(cfg.name || '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
 
   const senderHeader = (
     <Sender.Header
@@ -244,7 +263,7 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
                 ) : null}
               </Flex>
               <Flex align="center">
-                <Button type="text" style={IconStyle} icon={<ApiOutlined />} />
+                <Button type="text" style={IconStyle} icon={<ApiOutlined />} onClick={() => setSettingsOpen(true)} />
                 <Divider orientation="vertical" />
                 {actionNode}
               </Flex>
@@ -272,6 +291,28 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
         slotConfig={AgentInfo[activeAgentKey].slotConfig}
         autoSize={{ minRows: 3, maxRows: 6 }}
       />
+      <Modal
+        title="模型配置"
+        open={settingsOpen}
+        onCancel={() => setSettingsOpen(false)}
+        onOk={async () => {
+          await window.api?.setModelConfig?.({ apiKey, url: modelUrl, name: modelName });
+          message.success('模型配置已更新');
+          setSettingsOpen(false);
+        }}
+      >
+        <Form layout="vertical">
+          <Form.Item label="API Key">
+            <Input.Password value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="输入模型 API Key" />
+          </Form.Item>
+          <Form.Item label="模型地址">
+            <Input value={modelUrl} onChange={(e) => setModelUrl(e.target.value)} placeholder="https://.../chat/completions" />
+          </Form.Item>
+          <Form.Item label="模型名称">
+            <Input value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="kimi-k2-..." />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Flex>
   );
 };

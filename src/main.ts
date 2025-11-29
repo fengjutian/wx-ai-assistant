@@ -5,6 +5,18 @@ import started from 'electron-squirrel-startup';
 
 dotenv.config();
 
+type ModelConfig = {
+  apiKey: string;
+  url: string;
+  name: string;
+};
+
+let modelConfig: ModelConfig = {
+  apiKey: process.env.MODEL_API_KEY || '',
+  url: process.env.MODEL_URL || '',
+  name: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+};
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -59,7 +71,7 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
   console.log('- MODEL_URL:', process.env.MODEL_URL || 'not set');
   console.log('- MODEL_NAME:', process.env.MODEL_NAME || 'not set');
   
-  const API_KEY = process.env.MODEL_API_KEY || '';
+  const API_KEY = modelConfig.apiKey || process.env.MODEL_API_KEY || '';
   if (!API_KEY) return { error: 'MODEL_API_KEY not set in environment' };
 
   try {
@@ -69,14 +81,14 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
     //   : process.env.MODEL_URL || '';
     
     // Node 18+ 自带 fetch
-    const res = await fetch(process.env.MODEL_URL || '', {
+    const res = await fetch(modelConfig.url || process.env.MODEL_URL || '', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
-        model: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+        model: modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
         messages: [...(history || []), { role: 'user', content: prompt }],
         max_tokens: 800,
         temperature: 0.3,
@@ -100,6 +112,19 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle('config:get', async () => {
+  return modelConfig;
+});
+
+ipcMain.handle('config:update', async (event, cfg: Partial<ModelConfig>) => {
+  modelConfig = {
+    apiKey: cfg.apiKey ?? modelConfig.apiKey,
+    url: cfg.url ?? modelConfig.url,
+    name: cfg.name ?? modelConfig.name,
+  };
+  return { ok: true };
 });
 
 app.on('ready', createWindow);

@@ -15,6 +15,8 @@ export interface ModelResponse {
 export interface ElectronAPI {
   callModel: (prompt: string, history?: Message[]) => Promise<ModelResponse>;
   openExternal: (url: string) => void;
+  getModelConfig: () => Promise<{ apiKey: string; url: string; name: string }>;
+  setModelConfig: (cfg: { apiKey?: string; url?: string; name?: string }) => Promise<{ ok: boolean }>;
 }
 
 // 暴露API给渲染进程
@@ -28,6 +30,12 @@ contextBridge.exposeInMainWorld('api', {
     } catch (e) {
       console.warn('openExternal failed', e);
     }
+  },
+  getModelConfig: async () => {
+    return await ipcRenderer.invoke('config:get');
+  },
+  setModelConfig: async (cfg: { apiKey?: string; url?: string; name?: string }) => {
+    return await ipcRenderer.invoke('config:update', cfg);
   },
 });
 
