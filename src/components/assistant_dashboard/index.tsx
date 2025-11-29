@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Message } from '../../preload';
 import { XMarkdown } from '@ant-design/x-markdown';
 import { Welcome, Sender } from '@ant-design/x';
@@ -21,6 +21,11 @@ const AssistantDashboard: React.FC<Props> = ({
   onPromptChange,
   onSubmit,
 }) => {
+  useEffect(() => {
+    if (!isLoading) {
+      onPromptChange('');
+    }
+  }, [isLoading, onPromptChange]);
   return (
     <div id="chat-area">
       <div id="messages">
@@ -43,19 +48,12 @@ const AssistantDashboard: React.FC<Props> = ({
         )}
         <div ref={messagesEndRef} />
       </div>
-      <SenderComponent />
-      <div id="controls">
-        <Sender
-          value={prompt}
-          onChange={(val) => onPromptChange(val)}
-          onSubmit={onSubmit}
-          placeholder="向大模型提问..."
-          disabled={isLoading}
-        />
-      </div>
+      <SenderComponent
+        prompt={prompt}
+        onPromptChange={onPromptChange}
+        onSubmit={onSubmit} />
     </div>
   );
 };
 
 export default AssistantDashboard;
-

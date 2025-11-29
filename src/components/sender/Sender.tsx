@@ -104,7 +104,13 @@ const FileInfo: {
   },
 };
 
-const SenderComponent: React.FC = () => {
+type SenderComponentProps = {
+  onPromptChange?: (val: string) => void;
+  prompt?: string;
+  onSubmit?: (val: string) => void;
+};
+
+const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, prompt, onSubmit }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [deepThink, setDeepThink] = useState<boolean>(true);
   const [activeAgentKey, setActiveAgentKey] = useState('deep_search');
@@ -194,6 +200,7 @@ const SenderComponent: React.FC = () => {
         loading={loading}
         ref={senderRef}
         placeholder="按回车发送消息"
+        value={prompt}
         header={senderHeader}
         footer={(actionNode) => {
           return (
@@ -245,10 +252,17 @@ const SenderComponent: React.FC = () => {
           );
         }}
         suffix={false}
+        onChange={(v) => {
+          onPromptChange?.(v);
+        }}
         onSubmit={(v) => {
-          setLoading(true);
-          message.info(`Send message: ${v}`);
-          senderRef.current?.clear?.();
+          if (onSubmit) {
+            onSubmit(v);
+          } else {
+            setLoading(true);
+            message.info(`Send message: ${v}`);
+            senderRef.current?.clear?.();
+          }
         }}
         onCancel={() => {
           setLoading(false);
@@ -261,4 +275,4 @@ const SenderComponent: React.FC = () => {
   );
 };
 
-export default () => <SenderComponent />;
+export default SenderComponent;
