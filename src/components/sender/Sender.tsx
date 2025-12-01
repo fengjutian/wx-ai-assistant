@@ -241,7 +241,7 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
             <Flex justify="space-between" align="center">
               <Flex gap="small" align="center">
                 <Button style={IconStyle} type="text" icon={<PaperClipOutlined />} />
-                <Switch
+                {/* <Switch
                   value={deepThink}
                   checkedChildren={
                     <>
@@ -257,8 +257,8 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
                     setDeepThink(checked);
                   }}
                   icon={<OpenAIOutlined />}
-                />
-                <Dropdown
+                /> */}
+                {/* <Dropdown
                   menu={{
                     selectedKeys: [activeAgentKey],
                     onClick: agentItemClick,
@@ -268,18 +268,18 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
                   <Switch value={false} icon={<AntDesignOutlined />}>
                     Agent
                   </Switch>
-                </Dropdown>
+                </Dropdown> */}
                 {fileItems?.length ? (
                   <Dropdown menu={{ onClick: fileItemClick, items: fileItems }}>
                     <Switch value={false} icon={<ProfileOutlined />}>
-                      Files
+                      文件
                     </Switch>
                   </Dropdown>
                 ) : null}
               </Flex>
               <Flex align="center">
                 <Button type="text" style={IconStyle} icon={<ApiOutlined />} onClick={() => setSettingsOpen(true)} />
-                <Button type="text" onClick={() => onCaptureSelection?.()}>抓取选区</Button>
+                {/* <Button type="text" onClick={() => onCaptureSelection?.()}>抓取选区</Button> */}
                 <Divider orientation="vertical" />
                 {actionNode}
               </Flex>
