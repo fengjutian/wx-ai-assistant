@@ -57,7 +57,9 @@ contextBridge.exposeInMainWorld('api', {
 
 contextBridge.exposeInMainWorld("rag", {
   ingest: (data) => ipcRenderer.invoke("rag:ingest", data),
-  search: (data) => ipcRenderer.invoke("rag:search", data)
+  search: (data) => ipcRenderer.invoke("rag:search", data),
+  ingestFileBlob: (payload: { name: string; type?: string; data: ArrayBuffer }) =>
+    ipcRenderer.invoke('rag:ingestFileBlob', payload),
 });
 
 

@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { fileURLToPath } from "url";
+import OpenAI from 'openai';
 
 dotenv.config();
 
@@ -77,6 +78,49 @@ ipcMain.handle("rag:ingest", async (_, { id, text, embedding }) => {
 ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
   if (!collection) return { ids: [], documents: [], distances: [] };
   return await collection.query({ queryEmbeddings: [embedding], nResults: topK ?? 5 });
+});
+
+function splitText(text: string, size = 300) {
+  const out: string[] = [];
+  for (let i = 0; i < text.length; i += size) {
+    out.push(text.slice(i, i + size));
+  }
+  return out;
+}
+
+ipcMain.handle('rag:ingestFileBlob', async (_evt, payload: { name: string; type?: string; data: ArrayBuffer }) => {
+  try {
+    const name = payload?.name || '';
+    const type = payload?.type || '';
+    const buf = Buffer.from(new Uint8Array(payload?.data || new ArrayBuffer(0)));
+
+    let text = '';
+    const isPdf = type.includes('pdf') || name.endsWith('.pdf');
+    if (isPdf) {
+      const mod: any = await import('pdf-parse');
+      const pdfParse = mod.default || mod;
+      const pdf = await pdfParse(buf);
+      text = pdf.text || '';
+    } else {
+      text = buf.toString('utf-8');
+    }
+
+    const chunks = splitText(text, 300);
+    const base = (modelConfig.url || process.env.MODEL_URL || '').replace(/\/chat\/completions$/, '') || 'https://api.moonshot.cn/v1';
+    const client = new OpenAI({ apiKey: modelConfig.apiKey || process.env.MODEL_API_KEY || '', baseURL: base });
+    const model = process.env.MODEL_EMBED_NAME || modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-0905-preview';
+
+    const items: Array<{ id: string; text: string; embedding: number[] }> = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const res = await client.embeddings.create({ model, input: chunk });
+      const emb = (res.data && res.data[0] && res.data[0].embedding) || [];
+      items.push({ id: `${name}#${i}`, text: chunk, embedding: emb as any });
+    }
+    return { items };
+  } catch (e: any) {
+    return { error: e?.message || String(e) };
+  }
 });
 
 // 处理渲染进程的模型调用请求（使用 ipcMain.handle）

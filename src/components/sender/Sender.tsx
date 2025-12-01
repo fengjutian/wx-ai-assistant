@@ -10,7 +10,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { Attachments, AttachmentsProps, Sender, SenderProps } from '@ant-design/x';
-import { Button, Divider, Dropdown, Flex, GetRef, MenuProps, message, Modal, Input, Form } from 'antd';
+import { Button, Divider, Dropdown, Flex, GetRef, MenuProps, message, Modal, Input, Form, Upload } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
 const Switch = Sender.Switch;
@@ -269,13 +269,33 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
                     Agent
                   </Switch>
                 </Dropdown> */}
-                {fileItems?.length ? (
-                  <Dropdown menu={{ onClick: fileItemClick, items: fileItems }}>
-                    <Switch value={false} icon={<ProfileOutlined />}>
-                      文件
-                    </Switch>
-                  </Dropdown>
-                ) : null}
+                <Upload
+                  multiple
+                  showUploadList={false}
+                  beforeUpload={() => false}
+                  accept=".txt,.md,.pdf,text/plain,application/pdf"
+                  onChange={async ({ file }) => {
+                    try {
+                      const raw = (file as any).originFileObj as File;
+                      if (!raw) return;
+                      const ab = await raw.arrayBuffer();
+                      const resp = await (window as any).rag?.ingestFileBlob?.({ name: raw.name, type: raw.type, data: ab });
+                      if (resp?.error) {
+                        message.error(resp.error);
+                        return;
+                      }
+                      const items = resp?.items || [];
+                      for (const item of items) {
+                        await (window as any).rag?.ingest?.(item);
+                      }
+                      message.success(`已导入 ${raw.name}`);
+                    } catch (e) {
+                      message.error(`导入失败`);
+                    }
+                  }}
+                >
+                  <Switch value={false} icon={<ProfileOutlined />}>文件</Switch>
+                </Upload>
               </Flex>
               <Flex align="center">
                 <Button type="text" style={IconStyle} icon={<ApiOutlined />} onClick={() => setSettingsOpen(true)} />
