@@ -100,6 +100,33 @@ ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
   };
 });
 
+ipcMain.handle("rag:delete", async (_, { name }) => {
+  try {
+    const prefix = String(name || "");
+    if (!prefix) return { removed: 0 };
+  const removedIds: string[] = [];
+  const keep = [] as typeof localItems;
+  for (const it of localItems) {
+    if (it.id.startsWith(prefix + "#")) {
+      removedIds.push(it.id);
+    } else {
+      keep.push(it);
+    }
+  }
+  localItems.length = 0;
+  for (const it of keep) localItems.push(it);
+  const removed = removedIds.length;
+  if (collection && removed > 0) {
+    try {
+      await collection.delete({ ids: removedIds });
+    } catch (_) { /* ignore */ }
+  }
+    return { removed };
+  } catch (e) {
+    return { removed: 0 };
+  }
+});
+
 function splitText(text: string, size = 300) {
   const out: string[] = [];
   for (let i = 0; i < text.length; i += size) {
@@ -352,6 +379,14 @@ app.whenReady().then(async () => {
       name: parsed.name ?? modelConfig.name,
     };
   }
+  try {
+    const mod: any = await import('chromadb');
+    const ChromaClient = mod.ChromaClient || mod.Client;
+    if (ChromaClient) {
+      const client = new ChromaClient();
+      collection = await client.getOrCreateCollection({ name: 'wx-rag' });
+    }
+  } catch (_) { /* ignore chroma init errors */ }
   createWindow();
 });
 

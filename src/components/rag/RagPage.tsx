@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Flex, Input, Button, Upload, message } from 'antd';
+import { Flex, Input, Button, Upload, message, List } from 'antd';
 
 const RagPage: React.FC = () => {
   const [topK, setTopK] = useState<number>(3);
   const [question, setQuestion] = useState<string>('');
   const [answer, setAnswer] = useState<string>('');
   const [busy, setBusy] = useState<boolean>(false);
+  const [uploaded, setUploaded] = useState<Array<{ name: string; items: number }>>([]);
 
   const doUpload = async (file: File) => {
     try {
@@ -16,10 +17,13 @@ const RagPage: React.FC = () => {
         return;
       }
       const items = resp?.items || [];
+      let success = 0;
       for (const item of items) {
-        await (window as any).rag?.ingest?.(item);
+        const ok = await (window as any).rag?.ingest?.(item);
+        if (ok) success += 1;
       }
-      message.success(`已导入 ${file.name}`);
+      message.success(`已导入 ${file.name}（成功分块 ${success}/${items.length}）`);
+      setUploaded((prev) => [...prev, { name: file.name, items: success }]);
     } catch {
       message.error('导入失败');
     }
@@ -53,6 +57,20 @@ const RagPage: React.FC = () => {
     }
   };
 
+  const doDelete = async (name: string) => {
+    try {
+      const res = await (window as any).rag?.delete?.({ name });
+      if (res?.removed > 0) {
+        message.success(`已删除 ${name}（移除分块 ${res.removed}）`);
+      } else {
+        message.info(`未找到可删除的分块：${name}`);
+      }
+      setUploaded((prev) => prev.filter((it) => it.name !== name));
+    } catch {
+      message.error('删除失败');
+    }
+  };
+
   return (
     <Flex vertical style={{ padding: 12 }} gap="small">
       <Flex gap="small" align="center">
@@ -67,6 +85,20 @@ const RagPage: React.FC = () => {
           setTopK(Number.isFinite(v) ? Math.max(1, Math.min(10, v)) : 3);
         }} placeholder="topK" />
       </Flex>
+      <List
+        size="small"
+        bordered
+        dataSource={uploaded}
+        renderItem={(it) => (
+          <List.Item
+            actions={[
+              <Button danger type="link" onClick={() => doDelete(it.name)}>删除</Button>,
+            ]}
+          >
+            {it.name}（分块 {it.items}）
+          </List.Item>
+        )}
+      />
       <Input.TextArea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="输入问题" autoSize={{ minRows: 3, maxRows: 6 }} />
       <Button type="primary" loading={busy} onClick={ask}>检索问答</Button>
       <Input.TextArea value={answer} readOnly autoSize={{ minRows: 6, maxRows: 20 }} placeholder="答案输出" />
