@@ -3,6 +3,8 @@ import { Message } from './preload';
 import './index.css';
 import AssistantDashboard from './components/assistant_dashboard';
 import RagPage from './components/rag/RagPage';
+import ArticleEditor from "./components/article_editor";
+import Edit from "./components/edit";
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -281,6 +283,8 @@ const App: React.FC = () => {
           <div id="resizer" onMouseDown={(e) => { e.preventDefault(); setDragging(true); }} />
 
           <div id="right" style={{ width: `${Math.round((1 - leftRatio) * 100)}%` }}>
+            <Edit/>
+            <ArticleEditor />
             <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', gap: 8 }}>
               <button onClick={() => setShowRag(false)}>助手</button>
               <button onClick={() => setShowRag(true)}>RAG</button>
