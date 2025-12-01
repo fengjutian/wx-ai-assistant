@@ -2,6 +2,7 @@
   "name": "wx-ai-assistant",
   "productName": "wx-ai-assistant",
   "version": "1.0.0",
+  "type": "module",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {

@@ -3,6 +3,8 @@ import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { ChromaClient } from "chromadb";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -23,7 +25,27 @@ if (started) {
   app.quit();
 }
 
-const createWindow = () => {
+// 处理 __dirname（ESM 里默认没有）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let chroma = null;
+let collection = null;
+
+async function initChroma() {
+  chroma = new ChromaClient({
+    path: "file://" + path.join(__dirname, "vector-db")
+  });
+
+  collection = await chroma.getOrCreateCollection({
+    name: "local_rag",
+    metadata: { "hnsw:space": "cosine" }
+  });
+}
+
+ const createWindow = async () => {
+  await initChroma();
+
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -59,6 +81,24 @@ const createWindow = () => {
     console.log(`[渲染进程] ${message} (${sourceId}:${line})`);
   });
 };
+
+/*** RAG: ingest (写入向量库) ***/
+ipcMain.handle("rag:ingest", async (_, { id, text, embedding }) => {
+  await collection.add({
+    ids: [id],
+    documents: [text],
+    embeddings: [embedding]
+  });
+  return true;
+});
+
+/*** RAG: search (相似度搜索) ***/
+ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
+  return await collection.query({
+    queryEmbeddings: [embedding],
+    nResults: topK ?? 5
+  });
+});
 
 // 处理渲染进程的模型调用请求（使用 ipcMain.handle）
 // 请在环境变量中配置 MODEL_API_KEY 并在这里使用（不要把密钥写到客户端）
