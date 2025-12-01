@@ -30,6 +30,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let collection: any = null;
+const localItems: Array<{ id: string; text: string; embedding: number[] }> = [];
 
  const createWindow = async () => {
 
@@ -70,14 +71,33 @@ let collection: any = null;
 };
 
 ipcMain.handle("rag:ingest", async (_, { id, text, embedding }) => {
-  if (!collection) return false;
-  await collection.add({ ids: [id], documents: [text], embeddings: [embedding] });
-  return true;
+  try {
+    localItems.push({ id, text, embedding: (embedding || []) as number[] });
+    if (collection) {
+      await collection.add({ ids: [id], documents: [text], embeddings: [embedding] });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
 });
 
 ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
-  if (!collection) return { ids: [], documents: [], distances: [] };
-  return await collection.query({ queryEmbeddings: [embedding], nResults: topK ?? 5 });
+  const k = topK ?? 5;
+  if (collection) {
+    return await collection.query({ queryEmbeddings: [embedding], nResults: k });
+  }
+  const q = (embedding || []) as number[];
+  const sims = localItems.map((it) => ({
+    id: it.id,
+    doc: it.text,
+    sim: cosine(it.embedding as number[], q),
+  })).sort((a, b) => b.sim - a.sim).slice(0, k);
+  return {
+    ids: [sims.map((s) => s.id)],
+    documents: [sims.map((s) => s.doc)],
+    distances: [sims.map((s) => 1 - s.sim)],
+  };
 });
 
 function splitText(text: string, size = 300) {
@@ -128,12 +148,34 @@ ipcMain.handle('rag:embed', async (_evt, payload: { text: string }) => {
     const base = (modelConfig.url || process.env.MODEL_URL || '').replace(/\/chat\/completions$/, '') || 'https://api.moonshot.cn/v1';
     const client = new OpenAI({ apiKey: modelConfig.apiKey || process.env.MODEL_API_KEY || '', baseURL: base });
     const model = process.env.MODEL_EMBED_NAME || modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-0905-preview';
-    const res = await client.embeddings.create({ model, input: payload.text || '' });
-    return { embedding: (res.data && res.data[0] && res.data[0].embedding) || [] };
+    try {
+      const res = await client.embeddings.create({ model, input: payload.text || '' });
+      return { embedding: (res.data && res.data[0] && res.data[0].embedding) || [] };
+    } catch (e) {
+      return { embedding: localEmbed(payload.text || '') };
+    }
   } catch (e: any) {
     return { error: e?.message || String(e) };
   }
 });
+
+function localEmbed(text: string): number[] {
+  const dim = 256;
+  const v = new Array(dim).fill(0);
+  const tokens = String(text || '').toLowerCase().split(/[^a-z0-9\u4e00-\u9fa5]+/).filter(Boolean);
+  for (const t of tokens) {
+    let h = 2166136261;
+    for (let i = 0; i < t.length; i++) {
+      h ^= t.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    const idx = Math.abs(h) % dim;
+    v[idx] += 1;
+  }
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+  for (let i = 0; i < dim; i++) v[i] = v[i] / norm;
+  return v;
+}
 
 // 处理渲染进程的模型调用请求（使用 ipcMain.handle）
 // 请在环境变量中配置 MODEL_API_KEY 并在这里使用（不要把密钥写到客户端）
@@ -326,3 +368,15 @@ app.on('activate', () => {
     createWindow();
   }
 });
+function cosine(a: number[], b: number[]) {
+  let dot = 0, na = 0, nb = 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const x = a[i] || 0;
+    const y = b[i] || 0;
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  return na && nb ? dot / Math.sqrt(na * nb) : 0;
+}

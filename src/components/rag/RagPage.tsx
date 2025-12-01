@@ -44,6 +44,7 @@ const RagPage: React.FC = () => {
       if (res?.error) {
         message.error(res.error);
       }
+      console.log('sr', res);
       setAnswer(res?.text || '');
     } catch {
       message.error('检索或生成失败');
