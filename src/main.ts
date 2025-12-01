@@ -16,7 +16,7 @@ type ModelConfig = {
 let modelConfig: ModelConfig = {
   apiKey: process.env.MODEL_API_KEY || '',
   url: process.env.MODEL_URL || '',
-  name: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+  name: process.env.MODEL_NAME || 'kimi-k2-0905-preview',
 };
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -113,7 +113,7 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
       // 请求体为标准 Chat Completions 参数
       body: JSON.stringify({
         // 模型名称需有效，如 kimi-k2-0905-preview；可通过设置弹窗修改
-        model: modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+        model: modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-0905-preview',
         // 消息数组必须包含 role 与 content，历史记录在渲染层传入
         messages: [...(history || []), { role: 'user', content: prompt }],
         max_tokens: 800,
@@ -195,7 +195,7 @@ ipcMain.handle('config:reset', async () => {
   modelConfig = {
     apiKey: process.env.MODEL_API_KEY || '',
     url: process.env.MODEL_URL || '',
-    name: process.env.MODEL_NAME || 'kimi-k2-thinking-turbo',
+    name: process.env.MODEL_NAME || 'kimi-k2-0905-preview',
   };
   const filePath = path.join(app.getPath('userData'), 'model_config.json');
   await fs.writeFile(filePath, JSON.stringify(modelConfig), 'utf-8');
