@@ -6,6 +6,14 @@ import RagPage from './components/rag/RagPage';
 import ArticleEditor from "./components/article_editor";
 import Edit from "./components/edit";
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
+
 const WEIXINURL = 'https://weread.qq.com/';
 
 const App: React.FC = () => {
@@ -284,7 +292,7 @@ const App: React.FC = () => {
 
           <div id="right" style={{ width: `${Math.round((1 - leftRatio) * 100)}%` }}>
             <Edit/>
-            <ArticleEditor />
+            {/* <ArticleEditor /> */}
             <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', gap: 8 }}>
               <button onClick={() => setShowRag(false)}>助手</button>
               <button onClick={() => setShowRag(true)}>RAG</button>

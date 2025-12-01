@@ -40,7 +40,7 @@
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "prettier": "^3.6.2",
-    "typescript": "~4.5.4",
+    "typescript": "^5.6.3",
     "vite": "^5.4.21"
   },
   "dependencies": {
@@ -52,6 +52,7 @@
     "chromadb": "^3.1.6",
     "dotenv": "^17.2.3",
     "electron-squirrel-startup": "^1.0.1",
+    "lucide-react": "^0.555.0",
     "novel": "^1.0.2",
     "openai": "^6.9.1",
     "pdf-parse": "^2.4.5",

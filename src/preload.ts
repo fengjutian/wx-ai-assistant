@@ -55,9 +55,12 @@ contextBridge.exposeInMainWorld('api', {
   },
 });
 
+type RagIngestPayload = { id: string; text: string; embedding: number[] };
+type RagSearchPayload = { embedding: number[]; topK?: number };
+
 contextBridge.exposeInMainWorld("rag", {
-  ingest: (data) => ipcRenderer.invoke("rag:ingest", data),
-  search: (data) => ipcRenderer.invoke("rag:search", data),
+  ingest: (data: RagIngestPayload) => ipcRenderer.invoke("rag:ingest", data),
+  search: (data: RagSearchPayload) => ipcRenderer.invoke("rag:search", data),
   ingestFileBlob: (payload: { name: string; type?: string; data: ArrayBuffer }) =>
     ipcRenderer.invoke('rag:ingestFileBlob', payload),
   embed: (payload: { text: string }) => ipcRenderer.invoke('rag:embed', payload),

@@ -315,7 +315,8 @@ ipcMain.handle('model:chat', async (event, { prompt, history }) => {
       return { text: assistantMsg, raw: json };
     }
   } catch (err) {
-    return { error: err.message };
+    const msg = (err as any)?.message || String(err);
+    return { error: msg };
   }
 });
 
