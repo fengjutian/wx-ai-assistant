@@ -1,0 +1,39 @@
+<body>
+  <h1>Electron + ChromaDB 本地 RAG</h1>
+
+  <button id="ingest">导入 docs/ 文件夹</button>
+  <br>
+
+  <input id="q" placeholder="输入问题" style="width:400px;">
+  <button id="ask">搜索问答</button>
+
+  <pre id="out"></pre>
+
+<script type="module">
+  import { ingestFile } from "./rag/ingest.js";
+  import { ragQuery } from "./rag/query.js";
+
+  document.getElementById("ingest").onclick = async () => {
+    const files = ["./docs/a.txt", "./docs/b.pdf"];
+
+    for (const f of files) {
+      const items = await ingestFile(f);
+      for (const item of items) {
+        await window.rag.ingest(item);
+      }
+    }
+    alert("导入完成");
+  };
+
+  document.getElementById("ask").onclick = async () => {
+    const q = document.getElementById("q").value;
+
+    const answer = await ragQuery(
+      q,
+      (emb, topK) => window.rag.search({ embedding: emb, topK })
+    );
+
+    document.getElementById("out").innerText = answer;
+  };
+</script>
+</body>

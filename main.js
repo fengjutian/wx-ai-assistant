@@ -1,9 +1,26 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const os = require('os');
+const { ChromaClient } = require("chromadb");
+
+let chroma = null;
+let collection = null;
+
+async function initChroma() {
+  chroma = new ChromaClient({
+    path: "file://" + path.join(__dirname, "vector-db")
+  });
+
+  collection = await chroma.getOrCreateCollection({
+    name: "local_rag",
+    metadata: { "hnsw:space": "cosine" }
+  });
+}
 
 // 安全提醒：启用 webviewTag 会降低渲染进程隔离安全性。仅在受信任环境下使用。
-function createWindow() {
+async function createWindow() {
+  await initChroma();
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -18,6 +35,24 @@ function createWindow() {
 
   win.loadFile('index.html');
 }
+
+/*** RAG 接口：文档 ingest ***/
+ipcMain.handle("rag:ingest", async (_, { id, text, embedding }) => {
+  await collection.add({
+    ids: [id],
+    documents: [text],
+    embeddings: [embedding]
+  });
+  return true;
+});
+
+/*** RAG 接口：相似度搜索 ***/
+ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
+  return await collection.query({
+    queryEmbeddings: [embedding],
+    nResults: topK ?? 5
+  });
+});
 
 app.whenReady().then(() => {
   createWindow();

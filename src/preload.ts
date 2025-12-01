@@ -55,6 +55,13 @@ contextBridge.exposeInMainWorld('api', {
   },
 });
 
+contextBridge.exposeInMainWorld("rag", {
+  ingest: (data) => ipcRenderer.invoke("rag:ingest", data),
+  search: (data) => ipcRenderer.invoke("rag:search", data)
+});
+
+
+
 // 声明全局类型
 declare global {
   interface Window {
