@@ -18,7 +18,7 @@ const App: React.FC = () => {
   const [dragging, setDragging] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
-  const webviewRef = useRef<HTMLElement>(null);
+  const webviewRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showRag, setShowRag] = useState<boolean>(false);
   
@@ -41,10 +41,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isElectron) return;
     
-    const handleNewWindow = (e: Event) => {
-      // 更安全地处理 CustomEvent
-      if ('detail' in e && typeof e.detail === 'object' && e.detail !== null && 'url' in e.detail) {
-        window.api?.openExternal?.(e.detail.url);
+    const handleNewWindow = (e: Event & { detail?: { url?: string } }) => {
+      const url = (e as any)?.detail?.url as string | undefined;
+      if (url) {
+        window.api?.openExternal?.(url);
       }
     };
 
@@ -199,7 +199,7 @@ const App: React.FC = () => {
         const ch = e.channel;
         if (ch === 'wx-copy') {
           const text = String((e.args && e.args[0]) || '').trim();
-          if (text) { setPrompt(text); setPromptKey((k) => k + 1); }
+          if (text) { setPrompt(text); }
         }
       } catch (_) { void 0; }
     };

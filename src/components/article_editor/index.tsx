@@ -30,25 +30,15 @@ const ArticleEditor: React.FC = () => {
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
           components={{
-            code({
-              node,
-              inline,
-              className,
-              children,
-              ...props
-            }: {
-              node?: any;
-              inline?: boolean;
-              className?: string;
-              children: React.ReactNode;
-            }) {
+            code: (props: any) => {
+              const { inline, className, children, ...rest } = props;
               const match = /language-(\w+)/.exec(className || "");
               return !inline && match ? (
                 <SyntaxHighlighter language={match[1]}>
                   {String(children).replace(/\n$/, "")}
                 </SyntaxHighlighter>
               ) : (
-                <code {...props}>{children}</code>
+                <code {...rest}>{children}</code>
               );
             }
           }}

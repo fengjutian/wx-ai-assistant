@@ -9,12 +9,12 @@ import {
   Placeholder,
 } from "novel";
 
-import { slashCommand, suggestionItems } from "./slash-command";
+import { slashCommand } from "./slash-command";
 
 
 
-export default () => {
- const extensions = [suggestionItems, slashCommand, StarterKit, Placeholder ];
+ export default () => {
+ const extensions = [slashCommand, StarterKit, Placeholder ];
 
  return (
   <EditorRoot>
@@ -35,5 +35,4 @@ export default () => {
   </EditorRoot>
 );
 }
-
 
