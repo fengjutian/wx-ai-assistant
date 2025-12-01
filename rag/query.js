@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { embedding } from "./embed.js";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
