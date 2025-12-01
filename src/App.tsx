@@ -6,14 +6,6 @@ import RagPage from './components/rag/RagPage';
 import ArticleEditor from "./components/article_editor";
 import Edit from "./components/edit";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-    }
-  }
-}
-
 const WEIXINURL = 'https://weread.qq.com/';
 
 const App: React.FC = () => {

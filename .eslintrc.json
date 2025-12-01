@@ -13,4 +13,13 @@
     "plugin:import/typescript"
   ],
   "parser": "@typescript-eslint/parser"
+  ,
+  "overrides": [
+    {
+      "files": ["**/*.d.ts"],
+      "rules": {
+        "@typescript-eslint/no-namespace": "off"
+      }
+    }
+  ]
 }
