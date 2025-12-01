@@ -62,6 +62,7 @@ contextBridge.exposeInMainWorld("rag", {
     ipcRenderer.invoke('rag:ingestFileBlob', payload),
   embed: (payload: { text: string }) => ipcRenderer.invoke('rag:embed', payload),
   delete: (payload: { name: string }) => ipcRenderer.invoke('rag:delete', payload),
+  list: () => ipcRenderer.invoke('rag:list'),
 });
 
 

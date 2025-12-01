@@ -100,6 +100,18 @@ ipcMain.handle("rag:search", async (_, { embedding, topK }) => {
   };
 });
 
+ipcMain.handle("rag:list", async () => {
+  const map = new Map<string, number>();
+  for (const it of localItems) {
+    const idx = it.id.indexOf('#');
+    const name = idx >= 0 ? it.id.slice(0, idx) : it.id;
+    map.set(name, (map.get(name) || 0) + 1);
+  }
+  const out: Array<{ name: string; items: number }> = [];
+  for (const [name, items] of map.entries()) out.push({ name, items });
+  return { files: out };
+});
+
 ipcMain.handle("rag:delete", async (_, { name }) => {
   try {
     const prefix = String(name || "");
@@ -160,9 +172,15 @@ ipcMain.handle('rag:ingestFileBlob', async (_evt, payload: { name: string; type?
     const items: Array<{ id: string; text: string; embedding: number[] }> = [];
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const res = await client.embeddings.create({ model, input: chunk });
-      const emb = (res.data && res.data[0] && res.data[0].embedding) || [];
-      items.push({ id: `${name}#${i}`, text: chunk, embedding: emb as any });
+      let emb: number[] = [];
+      try {
+        const res = await client.embeddings.create({ model, input: chunk });
+        emb = ((res.data && res.data[0] && res.data[0].embedding) || []) as any;
+      } catch (_) {
+        emb = localEmbed(chunk);
+      }
+      if (!emb || emb.length === 0) emb = localEmbed(chunk);
+      items.push({ id: `${name}#${i}`, text: chunk, embedding: emb });
     }
     return { items };
   } catch (e: any) {
