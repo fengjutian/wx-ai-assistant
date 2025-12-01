@@ -60,6 +60,7 @@ contextBridge.exposeInMainWorld("rag", {
   search: (data) => ipcRenderer.invoke("rag:search", data),
   ingestFileBlob: (payload: { name: string; type?: string; data: ArrayBuffer }) =>
     ipcRenderer.invoke('rag:ingestFileBlob', payload),
+  embed: (payload: { text: string }) => ipcRenderer.invoke('rag:embed', payload),
 });
 
 

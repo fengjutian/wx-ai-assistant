@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message } from './preload';
 import './index.css';
 import AssistantDashboard from './components/assistant_dashboard';
+import RagPage from './components/rag/RagPage';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -17,6 +18,7 @@ const App: React.FC = () => {
   const rafRef = useRef<number>(0);
   const webviewRef = useRef<HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showRag, setShowRag] = useState<boolean>(false);
   
   // 检查是否在Electron环境中
   const isElectron = typeof window !== 'undefined' && window.api;
@@ -279,15 +281,23 @@ const App: React.FC = () => {
           <div id="resizer" onMouseDown={(e) => { e.preventDefault(); setDragging(true); }} />
 
           <div id="right" style={{ width: `${Math.round((1 - leftRatio) * 100)}%` }}>
-            <AssistantDashboard
-              messages={messages}
-              isLoading={isLoading}
-              messagesEndRef={messagesEndRef}
-              prompt={prompt}
-              onPromptChange={setPrompt}
-              onSubmit={sendMessage}
-              onCaptureSelection={handleCaptureSelection}
-            />
+            <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowRag(false)}>助手</button>
+              <button onClick={() => setShowRag(true)}>RAG</button>
+            </div>
+            {showRag ? (
+              <RagPage />
+            ) : (
+              <AssistantDashboard
+                messages={messages}
+                isLoading={isLoading}
+                messagesEndRef={messagesEndRef}
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                onSubmit={sendMessage}
+                onCaptureSelection={handleCaptureSelection}
+              />
+            )}
           </div>
           {dragging && (
             <div

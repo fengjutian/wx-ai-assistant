@@ -123,6 +123,18 @@ ipcMain.handle('rag:ingestFileBlob', async (_evt, payload: { name: string; type?
   }
 });
 
+ipcMain.handle('rag:embed', async (_evt, payload: { text: string }) => {
+  try {
+    const base = (modelConfig.url || process.env.MODEL_URL || '').replace(/\/chat\/completions$/, '') || 'https://api.moonshot.cn/v1';
+    const client = new OpenAI({ apiKey: modelConfig.apiKey || process.env.MODEL_API_KEY || '', baseURL: base });
+    const model = process.env.MODEL_EMBED_NAME || modelConfig.name || process.env.MODEL_NAME || 'kimi-k2-0905-preview';
+    const res = await client.embeddings.create({ model, input: payload.text || '' });
+    return { embedding: (res.data && res.data[0] && res.data[0].embedding) || [] };
+  } catch (e: any) {
+    return { error: e?.message || String(e) };
+  }
+});
+
 // 处理渲染进程的模型调用请求（使用 ipcMain.handle）
 // 请在环境变量中配置 MODEL_API_KEY 并在这里使用（不要把密钥写到客户端）
 // 下面示例展示如何调用通用 REST 接口（以 OpenAI 风格为例），用户需替换为实际的大模型 API
