@@ -1,33 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Message } from './preload';
+import { Message, ModelResponse } from './preload';
 import './index.css';
-import AssistantDashboard from './components/assistant_dashboard';
-import RagPage from './components/rag/RagPage';
-import ArticleEditor from "./components/article_editor";
-import Edit from "./components/edit";
+import { XMarkdown } from '@ant-design/x-markdown';
+import { Welcome, Sender } from '@ant-design/x';
+import { injectWeChatReadingCopyHook } from './utils/webview-inject';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
 const App: React.FC = () => {
+  const [url, setUrl] = useState<string>(WEIXINURL);
   const [webviewSrc, setWebviewSrc] = useState<string>(WEIXINURL);
   const [prompt, setPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [appLoaded, setAppLoaded] = useState<boolean>(false);
-  const [leftRatio, setLeftRatio] = useState<number>(0.6);
-  const [dragging, setDragging] = useState<boolean>(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>(0);
-  const webviewRef = useRef<any>(null);
+  const [leftWidth, setLeftWidth] = useState<number>(60); // 左侧默认占60%
+  const webviewRef = useRef<HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showRag, setShowRag] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizerRef = useRef<HTMLDivElement>(null);
   
   // 检查是否在Electron环境中
   const isElectron = typeof window !== 'undefined' && window.api;
   
   // 组件加载完成
   useEffect(() => {
-    console.log('App component mounted');
+    console.log('App component mounted - VERSION 6');
     console.log('Running in Electron environment:', isElectron);
     setAppLoaded(true);
   }, [isElectron]);
@@ -41,10 +39,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isElectron) return;
     
-    const handleNewWindow = (e: Event & { detail?: { url?: string } }) => {
-      const url = (e as any)?.detail?.url as string | undefined;
-      if (url) {
-        window.api?.openExternal?.(url);
+    const handleNewWindow = (e: Event) => {
+      if ('detail' in e && typeof e.detail === 'object' && e.detail !== null && 'url' in e.detail) {
+        window.api?.openExternal?.(e.detail.url);
       }
     };
 
@@ -75,6 +72,15 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // 导航到URL
+  const navigateTo = () => {
+    let finalUrl = url.trim();
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = 'https://' + finalUrl;
+    }
+    setWebviewSrc(finalUrl);
+  };
+
   const sendMessage = async () => {
     const text = prompt.trim();
     if (!text) return;
@@ -86,12 +92,10 @@ const App: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // 检查window.api是否存在
       if (!window.api?.callModel) {
         throw new Error('API not available - running in development mode');
       }
       
-      // 使用展开操作符创建副本，避免闭包问题
       const res = await window.api.callModel(text, [...messages, newUserMessage]);
 
       if (res.error) {
@@ -107,140 +111,121 @@ const App: React.FC = () => {
     }
   };
 
+  // 使用最简单、最可靠的拖拽实现
   useEffect(() => {
-    if (!dragging) return;
-    const onMove = (ev: MouseEvent) => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = ev.clientX - rect.left;
-      let r = x / rect.width;
-      if (r < 0.1) r = 0.1;
-      if (r > 0.9) r = 0.9;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => setLeftRatio(r));
+    console.log('Setting up resize event handlers - VERSION 6');
+    
+    let isDragging = false;
+    let originalCursor = '';
+    let originalUserSelect = '';
+    
+    const startResize = (e: MouseEvent) => {
+      // 确保只有当点击的是分隔线元素时才开始拖拽
+      if (e.target !== resizerRef.current && 
+          !resizerRef.current?.contains(e.target as Node)) {
+        return;
+      }
+      
+      console.log('START RESIZE DETECTED!');
+      
+      // 阻止默认行为和冒泡
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isDragging = true;
+      originalCursor = document.body.style.cursor;
+      originalUserSelect = document.body.style.userSelect;
+      
+      // 设置全局鼠标样式
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
     };
-    const onUp = () => setDragging(false);
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+    
+    const doResize = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      console.log('RESIZE IN PROGRESS!');
+      
+      const container = containerRef.current;
+      if (!container) {
+        console.error('Container not found during resize!');
+        return;
+      }
+      
+      const rect = container.getBoundingClientRect();
+      const containerWidth = rect.width;
+      
+      // 计算鼠标相对于容器左侧的位置
+      const relativeX = e.clientX - rect.left;
+      
+      // 计算并设置新宽度，限制在20%-80%范围内
+      const newWidth = Math.max(20, Math.min(80, (relativeX / containerWidth) * 100));
+      
+      console.log(`SETTING LEFT WIDTH TO ${newWidth}%`);
+      setLeftWidth(newWidth);
     };
-  }, [dragging]);
-
-  useEffect(() => {
-    if (!isElectron) return;
-    const webview = webviewRef.current as any;
-    if (!webview) return;
-    (async () => {
-      try {
-        const r = await window.api?.resolveFsPath?.('src/webview-preload.js');
-        const p = r?.path;
-        if (p) {
-          try { webview.setAttribute('preload', p); } catch(_){ void 0; }
-          try { if (webview.getURL && webview.getURL()) { webview.reload(); } } catch(_){ void 0; }
-        }
-      } catch (_) { void 0; }
-    })();
-    const onConsoleMessage = (e: any) => {
-      const msg = e.message || '';
-      const prefix = '__WX_COPY__:';
-      if (typeof msg === 'string' && msg.startsWith(prefix)) {
-        const text = msg.slice(prefix.length).trim();
-        if (text) setPrompt(text);
+    
+    const stopResize = () => {
+      if (isDragging) {
+        console.log('STOPPING RESIZE!');
+        
+        isDragging = false;
+        
+        // 恢复默认样式
+        document.body.style.cursor = originalCursor;
+        document.body.style.userSelect = originalUserSelect;
       }
     };
-    const inject = () => {
-      try {
-        webview.executeJavaScript(`(function(){
-          if (window.__wx_copy_hook__) return;
-          window.__wx_copy_hook__ = true;
-          const emit = (t) => { try { console.log('__WX_COPY__:' + String(t || '').trim()); } catch(_){} };
-          const getSel = () => { try { return String((window.getSelection && window.getSelection().toString()) || '').trim(); } catch(_){ return ''; } };
-          console.log('__WX_COPY_INIT__');
-          document.addEventListener('copy', function(e){
-            let s = '';
-            try { s = e.clipboardData && e.clipboardData.getData && e.clipboardData.getData('text/plain') || ''; } catch(_){ }
-            if (!s) { s = getSel(); }
-            s = String(s || '').trim();
-            if (s) emit(s);
-          }, true);
-          document.addEventListener('cut', function(){
-            const s = getSel();
-            if (s) emit(s);
-          }, true);
-          document.addEventListener('keydown', function(e){
-            const k = (e.key || '').toLowerCase();
-            if ((e.ctrlKey || e.metaKey) && k === 'c') {
-              const s = getSel();
-              if (s) emit(s);
-            }
-          }, true);
-          document.addEventListener('selectionchange', function(){
-            const s = getSel();
-            if (s) { window.__wx_last_sel__ = s; }
-          }, true);
-          document.addEventListener('mouseup', function(){
-            const s = getSel();
-            if (s) emit(s);
-          }, true);
-          try {
-            const orig = (navigator.clipboard && navigator.clipboard.writeText) || null;
-            if (orig) {
-              navigator.clipboard.writeText = function(t){ try { emit(t); } catch(_){ } return orig.call(this, t); };
-            }
-          } catch(_){ }
-        })();`);
-      } catch (_) { void 0; }
-    };
-    webview.addEventListener('console-message', onConsoleMessage);
-    const onIpcMessage = (e: any) => {
-      try {
-        const ch = e.channel;
-        if (ch === 'wx-copy') {
-          const text = String((e.args && e.args[0]) || '').trim();
-          if (text) { setPrompt(text); }
-        }
-      } catch (_) { void 0; }
-    };
-    webview.addEventListener('ipc-message', onIpcMessage);
-    const onDomReady = () => inject();
-    const onDidNavigate = () => inject();
-    const onDidStopLoading = () => inject();
-    webview.addEventListener('dom-ready', onDomReady);
-    webview.addEventListener('did-navigate', onDidNavigate);
-    webview.addEventListener('did-stop-loading', onDidStopLoading);
-    inject();
+    
+    // 直接在document上绑定事件监听器
+    document.addEventListener('mousedown', startResize);
+    document.addEventListener('mousemove', doResize);
+    document.addEventListener('mouseup', stopResize);
+    document.addEventListener('mouseleave', stopResize);
+    
+    // 组件卸载时清理
     return () => {
-      try {
-        webview.removeEventListener('console-message', onConsoleMessage);
-        webview.removeEventListener('dom-ready', onDomReady);
-        webview.removeEventListener('did-navigate', onDidNavigate);
-        webview.removeEventListener('did-stop-loading', onDidStopLoading);
-        webview.removeEventListener('ipc-message', onIpcMessage);
-      } catch (_) { void 0; }
+      console.log('Cleaning up resize event handlers');
+      document.removeEventListener('mousedown', startResize);
+      document.removeEventListener('mousemove', doResize);
+      document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('mouseleave', stopResize);
+      
+      // 确保恢复默认样式
+      document.body.style.cursor = originalCursor;
+      document.body.style.userSelect = originalUserSelect;
     };
-  }, [isElectron]);
+  }, []);
 
-  const handleCaptureSelection = async () => {
-    if (!isElectron) return;
-    const webview = webviewRef.current as any;
-    if (!webview) return;
-    try {
-      const text = await webview.executeJavaScript('String((window.getSelection && window.getSelection().toString()) || "")');
-      const t = String(text || '').trim();
-      if (t) setPrompt(t);
-    } catch (_) { void 0; }
-  };
+  const websiteUrlInput = () => (
+    <div></div>
+  );
+
+  // WebView相关事件处理
+  const webview = webviewRef.current;
+  const onDomReady = () => injectWeChatReadingCopyHook(webview);
+  const onDidNavigate = () => injectWeChatReadingCopyHook(webview);
+  const onDidStopLoading = () => injectWeChatReadingCopyHook(webview);
 
   return (
-    <div id="container" ref={containerRef} style={{ backgroundColor: '#f5f5f5', display: 'flex' }}>
+    <div 
+      id="container" 
+      ref={containerRef}
+      style={{ 
+        backgroundColor: '#f5f5f5', 
+        display: 'flex',
+        height: '100vh',
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
       {/* 显示加载状态 */}
       {!appLoaded && (
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: 'center', 
+          alignItems: 'center', 
           height: '100vh',
           fontSize: '18px',
           color: '#333'
@@ -256,13 +241,25 @@ const App: React.FC = () => {
               padding: '10px', 
               backgroundColor: '#e3f2fd', 
               color: '#1976d2',
-              borderBottom: '1px solid #bbdefb'
+              borderBottom: '1px solid #bbdefb',
+              width: '100%'
             }}>
               开发环境模式 - 部分功能可能不可用
             </div>
           )}
           
-          <div id="left" style={{ width: `${Math.round(leftRatio * 100)}%` }}>
+          {/* 左侧面板 */}
+          <div 
+            id="left" 
+            style={{ 
+              width: `${leftWidth}%`, 
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            {websiteUrlInput()}
             {isElectron ? (
               <webview
                 ref={webviewRef}
@@ -270,6 +267,9 @@ const App: React.FC = () => {
                 src={webviewSrc}
                 style={{ width: '100%', height: '100%' }}
                 partition="persist:webview"
+                ondomready={onDomReady}
+                ondidnavigate={onDidNavigate}
+                ondidstoploading={onDidStopLoading}
               />
             ) : (
               <iframe
@@ -279,46 +279,77 @@ const App: React.FC = () => {
                 style={{ width: '100%', height: '100%', border: 'none' }}
               />
             )}
+            {isElectron && injectWeChatReadingCopyHook(webview)}
           </div>
-          <div id="resizer" onMouseDown={(e) => { e.preventDefault(); setDragging(true); }} />
 
-          <div id="right" style={{ width: `${Math.round((1 - leftRatio) * 100)}%` }}>
-            <Edit/>
-            {/* <ArticleEditor /> */}
-            <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowRag(false)}>助手</button>
-              <button onClick={() => setShowRag(true)}>RAG</button>
-            </div>
-            {showRag ? (
-              <RagPage />
-            ) : (
-              <AssistantDashboard
-                messages={messages}
-                isLoading={isLoading}
-                messagesEndRef={messagesEndRef}
-                prompt={prompt}
-                onPromptChange={setPrompt}
-                onSubmit={sendMessage}
-                onCaptureSelection={handleCaptureSelection}
-              />
-            )}
+          {/* 分隔线 - 大尺寸，高可见性 */}
+          <div 
+            id="resizer"
+            ref={resizerRef}
+            style={{
+              width: '20px', // 非常大的可点击区域
+              height: '100%',
+              backgroundColor: '#808080', // 更明显的颜色
+              cursor: 'col-resize',
+              zIndex: 1000, // 确保在最上层
+              position: 'relative'
+            }}
+          >
+            {/* 明显的分隔线指示器 */}
+            <div style={{
+              position: 'absolute',
+              left: '9px', // 居中
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '2px',
+              height: '100px',
+              backgroundColor: '#ffffff'
+            }}></div>
           </div>
-          {dragging && (
-            <div
-              style={{ position: 'fixed', inset: 0, cursor: 'col-resize', zIndex: 999, background: 'transparent' }}
-              onMouseMove={(ev) => {
-                const rect = containerRef.current?.getBoundingClientRect();
-                if (!rect) return;
-                const x = ev.clientX - rect.left;
-                let r = x / rect.width;
-                if (r < 0.1) r = 0.1;
-                if (r > 0.9) r = 0.9;
-                if (rafRef.current) cancelAnimationFrame(rafRef.current);
-                rafRef.current = requestAnimationFrame(() => setLeftRatio(r));
-              }}
-              onMouseUp={() => setDragging(false)}
-            />
-          )}
+
+          {/* 右侧面板 */}
+          <div 
+            id="right" 
+            style={{ 
+              width: `${100 - leftWidth}%`, 
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            <div id="chat-area" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div id="messages" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                <Welcome
+                  icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+                  title="Hello, 我是你的阅读助手"
+                  description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
+                />
+                {messages.map((msg, index) => (
+                  <div key={index} className={`message ${msg.role}`}>
+                    {msg.role === 'assistant' ? (
+                      <XMarkdown content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="message bot">正在请求模型，请稍候...</div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              <div id="controls" style={{ padding: '20px', borderTop: '1px solid #e0e0e0' }}>
+                <Sender
+                  value={prompt}
+                  onChange={(val) => setPrompt(val)}
+                  onSubmit={sendMessage}
+                  placeholder="向大模型提问..."
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>
