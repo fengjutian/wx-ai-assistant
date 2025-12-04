@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
 import { XMarkdown } from '@ant-design/x-markdown';
@@ -15,7 +15,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [appLoaded, setAppLoaded] = useState<boolean>(false);
   const [leftWidth, setLeftWidth] = useState<number>(60); // 左侧默认占60%
-  const webviewRef = useRef<HTMLElement>(null);
+  
+  // 更精确的类型定义
+  const webviewRef = useRef<Electron.WebviewTag | HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
@@ -25,8 +27,6 @@ const App: React.FC = () => {
   
   // 组件加载完成
   useEffect(() => {
-    console.log('App component mounted - VERSION 6');
-    console.log('Running in Electron environment:', isElectron);
     setAppLoaded(true);
   }, [isElectron]);
 
@@ -45,7 +45,7 @@ const App: React.FC = () => {
       }
     };
 
-    const webview = webviewRef.current;
+    const webview = webviewRef.current as Electron.WebviewTag;
     if (webview) {
       webview.addEventListener('new-window', handleNewWindow);
     }
@@ -57,14 +57,48 @@ const App: React.FC = () => {
     };
   }, [isElectron]);
 
-  // 键盘快捷键处理
+  // WebView相关事件处理 - 修复引用时机问题
+  useEffect(() => {
+    if (!isElectron) return;
+    
+    const webview = webviewRef.current as Electron.WebviewTag;
+    if (!webview) return;
+    
+    const onDomReady = () => {
+      injectWeChatReadingCopyHook(webview);
+    };
+    
+    const onDidNavigate = () => {
+      injectWeChatReadingCopyHook(webview);
+    };
+    
+    const onDidStopLoading = () => {
+      injectWeChatReadingCopyHook(webview);
+    };
+    
+    // 绑定事件监听器
+    webview.addEventListener('dom-ready', onDomReady);
+    webview.addEventListener('did-navigate', onDidNavigate);
+    webview.addEventListener('did-stop-loading', onDidStopLoading);
+    
+    // 初始注入
+    onDomReady();
+    
+    return () => {
+      // 清理事件监听器
+      webview.removeEventListener('dom-ready', onDomReady);
+      webview.removeEventListener('did-navigate', onDidNavigate);
+      webview.removeEventListener('did-stop-loading', onDidStopLoading);
+    };
+  }, [isElectron]);
+
+  // 键盘快捷键处理 - 修复不存在元素的问题
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
         e.preventDefault();
-        const urlInput = document.getElementById('url-input') as HTMLInputElement;
-        urlInput?.focus();
-        urlInput?.select();
+        // 移除对不存在元素的引用
+        console.log('Focus URL input shortcut pressed (element not implemented)');
       }
     };
 
@@ -73,15 +107,16 @@ const App: React.FC = () => {
   }, []);
 
   // 导航到URL
-  const navigateTo = () => {
+  const navigateTo = useCallback(() => {
     let finalUrl = url.trim();
     if (!/^https?:\/\//i.test(finalUrl)) {
       finalUrl = 'https://' + finalUrl;
     }
     setWebviewSrc(finalUrl);
-  };
+  }, [url]);
 
-  const sendMessage = async () => {
+  // 发送消息 - 使用useCallback优化
+  const sendMessage = useCallback(async () => {
     const text = prompt.trim();
     if (!text) return;
 
@@ -109,12 +144,10 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [prompt, messages]);
 
-  // 使用最简单、最可靠的拖拽实现
+  // 拖拽分隔线实现 - 优化性能
   useEffect(() => {
-    console.log('Setting up resize event handlers - VERSION 6');
-    
     let isDragging = false;
     let originalCursor = '';
     let originalUserSelect = '';
@@ -125,8 +158,6 @@ const App: React.FC = () => {
           !resizerRef.current?.contains(e.target as Node)) {
         return;
       }
-      
-      console.log('START RESIZE DETECTED!');
       
       // 阻止默认行为和冒泡
       e.preventDefault();
@@ -144,8 +175,6 @@ const App: React.FC = () => {
     const doResize = (e: MouseEvent) => {
       if (!isDragging) return;
       
-      console.log('RESIZE IN PROGRESS!');
-      
       const container = containerRef.current;
       if (!container) {
         console.error('Container not found during resize!');
@@ -161,14 +190,11 @@ const App: React.FC = () => {
       // 计算并设置新宽度，限制在20%-80%范围内
       const newWidth = Math.max(20, Math.min(80, (relativeX / containerWidth) * 100));
       
-      console.log(`SETTING LEFT WIDTH TO ${newWidth}%`);
       setLeftWidth(newWidth);
     };
     
     const stopResize = () => {
       if (isDragging) {
-        console.log('STOPPING RESIZE!');
-        
         isDragging = false;
         
         // 恢复默认样式
@@ -185,7 +211,6 @@ const App: React.FC = () => {
     
     // 组件卸载时清理
     return () => {
-      console.log('Cleaning up resize event handlers');
       document.removeEventListener('mousedown', startResize);
       document.removeEventListener('mousemove', doResize);
       document.removeEventListener('mouseup', stopResize);
@@ -200,12 +225,6 @@ const App: React.FC = () => {
   const websiteUrlInput = () => (
     <div></div>
   );
-
-  // WebView相关事件处理
-  const webview = webviewRef.current;
-  const onDomReady = () => injectWeChatReadingCopyHook(webview);
-  const onDidNavigate = () => injectWeChatReadingCopyHook(webview);
-  const onDidStopLoading = () => injectWeChatReadingCopyHook(webview);
 
   return (
     <div 
@@ -267,9 +286,6 @@ const App: React.FC = () => {
                 src={webviewSrc}
                 style={{ width: '100%', height: '100%' }}
                 partition="persist:webview"
-                ondomready={onDomReady}
-                ondidnavigate={onDidNavigate}
-                ondidstoploading={onDidStopLoading}
               />
             ) : (
               <iframe
@@ -279,7 +295,6 @@ const App: React.FC = () => {
                 style={{ width: '100%', height: '100%', border: 'none' }}
               />
             )}
-            {isElectron && injectWeChatReadingCopyHook(webview)}
           </div>
 
           {/* 分隔线 - 大尺寸，高可见性 */}
