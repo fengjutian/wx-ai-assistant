@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../../app.module.css';
+import styles from './operator.module.css';
 import { XMarkdown } from '@ant-design/x-markdown';
 import { Welcome, Sender } from '@ant-design/x';
 import { Message } from '../../preload';
