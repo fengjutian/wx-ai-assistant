@@ -5,6 +5,7 @@ import { XMarkdown } from '@ant-design/x-markdown';
 import { Welcome, Sender } from '@ant-design/x';
 import { injectWeChatReadingCopyHook } from './utils/webview-inject';
 import styles from './app.module.css';
+import WebviewPanel from './components/webview';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -40,9 +41,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isElectron) return;
     
-    const handleNewWindow = (e: Event) => {
-      if ('detail' in e && typeof e.detail === 'object' && e.detail !== null && 'url' in e.detail) {
-        window.api?.openExternal?.(e.detail.url);
+    const handleNewWindow = (e: Event & { detail?: { url?: string } }) => {
+      const url = (e as any)?.detail?.url as string | undefined;
+      if (url) {
+        window.api?.openExternal?.(url);
       }
     };
 
@@ -228,7 +230,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div 
+    <div
       id="container" 
       ref={containerRef}
       className={styles.container}
@@ -242,39 +244,15 @@ const App: React.FC = () => {
       
       {appLoaded && (
         <>
-          {!isElectron && (
-            <div className={styles.devMode}>
-              开发环境模式 - 部分功能可能不可用
-            </div>
-          )}
-          
-          {/* 左侧面板 */}
-          <div 
-            id="left" 
-            className={styles.leftPanel}
-            style={{ width: `${leftWidth}%` }}
-          >
-            {websiteUrlInput()}
-            {isElectron ? (
-              <webview
-                ref={webviewRef}
-                id="webview"
-                src={webviewSrc}
-                className={styles.webview}
-                partition="persist:webview"
-              />
-            ) : (
-              <iframe
-                ref={webviewRef}
-                id="webview"
-                src={webviewSrc}
-                className={styles.iframe}
-              />
-            )}
-          </div>
+          <WebviewPanel
+            isElectron={isElectron as any}
+            webviewRef={webviewRef as any}
+            webviewSrc={webviewSrc}
+            leftWidth={leftWidth}
+            renderUrlInput={websiteUrlInput}
+          />
 
-          {/* 分隔线 - 大尺寸，高可见性 */}
-          <div 
+          <div
             id="resizer"
             ref={resizerRef}
             className={styles.resizer}
@@ -284,7 +262,7 @@ const App: React.FC = () => {
           </div>
 
           {/* 右侧面板 */}
-          <div 
+          <div
             id="right" 
             className={styles.rightPanel}
             style={{ width: `${100 - leftWidth}%` }}
