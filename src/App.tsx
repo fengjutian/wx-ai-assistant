@@ -4,6 +4,7 @@ import './index.css';
 import { XMarkdown } from '@ant-design/x-markdown';
 import { Welcome, Sender } from '@ant-design/x';
 import { injectWeChatReadingCopyHook } from './utils/webview-inject';
+import styles from './app.module.css';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -230,25 +231,11 @@ const App: React.FC = () => {
     <div 
       id="container" 
       ref={containerRef}
-      style={{ 
-        backgroundColor: '#f5f5f5', 
-        display: 'flex',
-        height: '100vh',
-        width: '100%',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
+      className={styles.container}
     >
       {/* 显示加载状态 */}
       {!appLoaded && (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          fontSize: '18px',
-          color: '#333'
-        }}>
+        <div className={styles.loading}>
           应用加载中...
         </div>
       )}
@@ -256,13 +243,7 @@ const App: React.FC = () => {
       {appLoaded && (
         <>
           {!isElectron && (
-            <div style={{ 
-              padding: '10px', 
-              backgroundColor: '#e3f2fd', 
-              color: '#1976d2',
-              borderBottom: '1px solid #bbdefb',
-              width: '100%'
-            }}>
+            <div className={styles.devMode}>
               开发环境模式 - 部分功能可能不可用
             </div>
           )}
@@ -270,13 +251,8 @@ const App: React.FC = () => {
           {/* 左侧面板 */}
           <div 
             id="left" 
-            style={{ 
-              width: `${leftWidth}%`, 
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
+            className={styles.leftPanel}
+            style={{ width: `${leftWidth}%` }}
           >
             {websiteUrlInput()}
             {isElectron ? (
@@ -284,7 +260,7 @@ const App: React.FC = () => {
                 ref={webviewRef}
                 id="webview"
                 src={webviewSrc}
-                style={{ width: '100%', height: '100%' }}
+                className={styles.webview}
                 partition="persist:webview"
               />
             ) : (
@@ -292,7 +268,7 @@ const App: React.FC = () => {
                 ref={webviewRef}
                 id="webview"
                 src={webviewSrc}
-                style={{ width: '100%', height: '100%', border: 'none' }}
+                className={styles.iframe}
               />
             )}
           </div>
@@ -301,47 +277,27 @@ const App: React.FC = () => {
           <div 
             id="resizer"
             ref={resizerRef}
-            style={{
-              width: '20px', // 非常大的可点击区域
-              height: '100%',
-              backgroundColor: '#808080', // 更明显的颜色
-              cursor: 'col-resize',
-              zIndex: 1000, // 确保在最上层
-              position: 'relative'
-            }}
+            className={styles.resizer}
           >
             {/* 明显的分隔线指示器 */}
-            <div style={{
-              position: 'absolute',
-              left: '9px', // 居中
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '2px',
-              height: '100px',
-              backgroundColor: '#ffffff'
-            }}></div>
+            <div className={styles.resizerIndicator}></div>
           </div>
 
           {/* 右侧面板 */}
           <div 
             id="right" 
-            style={{ 
-              width: `${100 - leftWidth}%`, 
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
+            className={styles.rightPanel}
+            style={{ width: `${100 - leftWidth}%` }}
           >
-            <div id="chat-area" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div id="messages" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+            <div id="chat-area" className={styles.chatArea}>
+              <div id="messages" className={styles.messages}>
                 <Welcome
                   icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
                   title="Hello, 我是你的阅读助手"
                   description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
                 />
                 {messages.map((msg, index) => (
-                  <div key={index} className={`message ${msg.role}`}>
+                  <div key={index} className={`${styles.message} ${styles[msg.role]}`}>
                     {msg.role === 'assistant' ? (
                       <XMarkdown content={msg.content} />
                     ) : (
@@ -350,11 +306,11 @@ const App: React.FC = () => {
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="message bot">正在请求模型，请稍候...</div>
+                  <div className={`${styles.message} ${styles.assistant}`}>正在请求模型，请稍候...</div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              <div id="controls" style={{ padding: '20px', borderTop: '1px solid #e0e0e0' }}>
+              <div id="controls" className={styles.controls}>
                 <Sender
                   value={prompt}
                   onChange={(val) => setPrompt(val)}
