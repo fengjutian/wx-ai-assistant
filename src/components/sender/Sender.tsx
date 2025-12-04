@@ -310,13 +310,28 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
         onChange={(v) => {
           onPromptChange?.(v);
         }}
-        onSubmit={(v) => {
+        onSubmit={async (v) => {
+          const q = String(v || '').trim();
+          let finalPrompt = q;
+          try {
+            const embResp = await (window as any).rag?.embed?.({ text: q });
+            if (!embResp?.error) {
+              const emb = embResp?.embedding || [];
+              const sr = await (window as any).rag?.search?.({ embedding: emb, topK: 5 });
+              const docs = (sr?.documents || []).flat().join('\n---\n');
+              if (docs) {
+                finalPrompt = `利用以下文档回答问题：\n${docs}\n\n问题：${q}`;
+              }
+            }
+          } catch {
+            // ignore rag errors, fallback to original prompt
+          }
           if (onSubmit) {
-            onSubmit(v);
+            onSubmit(finalPrompt);
             senderRef.current?.clear?.();
           } else {
             setLoading(true);
-            message.info(`Send message: ${v}`);
+            message.info(`Send message: ${finalPrompt}`);
             senderRef.current?.clear?.();
           }
         }}

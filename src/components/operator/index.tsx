@@ -1,7 +1,8 @@
 import React from 'react';
 import styles from './operator.module.css';
 import { XMarkdown } from '@ant-design/x-markdown';
-import { Welcome, Sender } from '@ant-design/x';
+import { Welcome } from '@ant-design/x';
+import SenderComponent from '../sender/Sender';
 import { Message } from '../../preload';
 
 type Props = {
@@ -51,12 +52,10 @@ const OperatorPanel: React.FC<Props> = ({
           <div ref={messagesEndRef} />
         </div>
         <div id="controls" className={styles.controls}>
-          <Sender
-            value={prompt}
-            onChange={(val) => onPromptChange(val)}
+          <SenderComponent
+            prompt={prompt}
+            onPromptChange={onPromptChange}
             onSubmit={onSubmit}
-            placeholder="向大模型提问..."
-            disabled={isLoading}
           />
         </div>
       </div>

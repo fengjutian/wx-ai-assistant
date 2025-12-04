@@ -64,7 +64,6 @@ body,
 }
 #controls {
   padding: 8px;
-  display: flex;
   gap: 8px;
 }
 #controls textarea {
