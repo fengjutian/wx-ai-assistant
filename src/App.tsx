@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Message, ModelResponse } from './preload';
 import './index.css';
-import { XMarkdown } from '@ant-design/x-markdown';
-import { Welcome, Sender } from '@ant-design/x';
+import WebviewPanel from './components/webview';
+import OperatorPanel from './components/operator';
 import { injectWeChatReadingCopyHook } from './utils/webview-inject';
 import styles from './app.module.css';
-import WebviewPanel from './components/webview';
 
 const WEIXINURL = 'https://weread.qq.com/';
 
@@ -40,7 +39,7 @@ const App: React.FC = () => {
   // webview新窗口事件处理 - 仅在Electron环境中执行
   useEffect(() => {
     if (!isElectron) return;
-    
+
     const handleNewWindow = (e: Event & { detail?: { url?: string } }) => {
       const url = (e as any)?.detail?.url as string | undefined;
       if (url) {
@@ -261,44 +260,15 @@ const App: React.FC = () => {
             <div className={styles.resizerIndicator}></div>
           </div>
 
-          {/* 右侧面板 */}
-          <div
-            id="right" 
-            className={styles.rightPanel}
-            style={{ width: `${100 - leftWidth}%` }}
-          >
-            <div id="chat-area" className={styles.chatArea}>
-              <div id="messages" className={styles.messages}>
-                <Welcome
-                  icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
-                  title="Hello, 我是你的阅读助手"
-                  description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
-                />
-                {messages.map((msg, index) => (
-                  <div key={index} className={`${styles.message} ${styles[msg.role]}`}>
-                    {msg.role === 'assistant' ? (
-                      <XMarkdown content={msg.content} />
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className={`${styles.message} ${styles.assistant}`}>正在请求模型，请稍候...</div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-              <div id="controls" className={styles.controls}>
-                <Sender
-                  value={prompt}
-                  onChange={(val) => setPrompt(val)}
-                  onSubmit={sendMessage}
-                  placeholder="向大模型提问..."
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </div>
+          <OperatorPanel
+            rightWidth={100 - leftWidth}
+            messages={messages}
+            isLoading={isLoading}
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            onSubmit={sendMessage}
+            messagesEndRef={messagesEndRef}
+          />
         </>
       )}
     </div>
