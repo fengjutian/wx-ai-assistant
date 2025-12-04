@@ -22,21 +22,17 @@ const App: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
-  
-  // 检查是否在Electron环境中
+
   const isElectron = typeof window !== 'undefined' && window.api;
-  
-  // 组件加载完成
+
   useEffect(() => {
     setAppLoaded(true);
   }, [isElectron]);
 
-  // 滚动到最新消息
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // webview新窗口事件处理 - 仅在Electron环境中执行
   useEffect(() => {
     if (!isElectron) return;
 
@@ -59,7 +55,6 @@ const App: React.FC = () => {
     };
   }, [isElectron]);
 
-  // WebView相关事件处理 - 修复引用时机问题
   useEffect(() => {
     if (!isElectron) return;
     
@@ -107,15 +102,6 @@ const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // 导航到URL
-  const navigateTo = useCallback(() => {
-    let finalUrl = url.trim();
-    if (!/^https?:\/\//i.test(finalUrl)) {
-      finalUrl = 'https://' + finalUrl;
-    }
-    setWebviewSrc(finalUrl);
-  }, [url]);
 
   // 发送消息 - 使用useCallback优化
   const sendMessage = useCallback(async () => {
