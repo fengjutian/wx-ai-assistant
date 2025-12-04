@@ -139,6 +139,36 @@ ipcMain.handle("rag:delete", async (_, { name }) => {
   }
 });
 
+ipcMain.handle('rag:getDocsByNames', async (_evt, payload: { names: string[]; maxPerFile?: number; maxChars?: number }) => {
+  try {
+    const names = (payload?.names || []).map((n) => String(n || '').trim()).filter(Boolean);
+    const maxPerFile = Math.max(1, Math.min(1000, payload?.maxPerFile ?? 10));
+    const maxChars = Math.max(1, Math.min(200000, payload?.maxChars ?? 4000));
+    const out: Record<string, string[]> = {};
+    for (const name of names) {
+      const docs: string[] = [];
+      for (const it of localItems) {
+        if (it.id.startsWith(name + '#')) {
+          docs.push(it.text || '');
+          if (docs.length >= maxPerFile) break;
+        }
+      }
+      // 限制总字符数
+      let acc = '';
+      const picked: string[] = [];
+      for (const d of docs) {
+        if ((acc.length + d.length) > maxChars) break;
+        picked.push(d);
+        acc += d;
+      }
+      out[name] = picked;
+    }
+    return { docs: out };
+  } catch (e: any) {
+    return { error: e?.message || String(e) };
+  }
+});
+
 function splitText(text: string, size = 300) {
   const out: string[] = [];
   for (let i = 0; i < text.length; i += size) {

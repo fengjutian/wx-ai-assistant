@@ -124,6 +124,13 @@ function insertFileTag(senderRef: any, fileName: string) {
 /* ===========================================================================
  * 3. RAG ingest + search + embed 封装
  * ======================================================================== */
+function getRawFile(f: any): File | null {
+  const raw = (f?.originFileObj || f?.file || f) as File | undefined;
+  if (!raw) return null;
+  if (typeof (raw as any).arrayBuffer === 'function') return raw as File;
+  // 兼容极少数环境：使用 FileReader 获取数据，再构造 Blob
+  return raw as File;
+}
 async function ingestFile(raw: File) {
   const ab = await raw.arrayBuffer();
 
@@ -172,6 +179,7 @@ const SenderComponent: React.FC<{
   const [loading, setLoading] = useState(false);
   const [activeAgent, setActiveAgent] = useState("deep_search");
   const [fileList, setFileList] = useState<AttachmentsProps["items"]>([]);
+  const [uploadedNames, setUploadedNames] = useState<string[]>([]);
 
   // 模型设置
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -207,22 +215,44 @@ const SenderComponent: React.FC<{
   }, []);
 
   /* === 上传文件 → RAG → 插入 tag === */
-  const handleUpload = async ({ file }: any) => {
-    const raw = file.originFileObj as File;
-    if (!raw) return;
-
-    try {
-      await ingestFile(raw);
-      message.success(`已导入 ${raw.name}`);
-      insertFileTag(senderRef, raw.name);
-    } catch {
-      message.error("导入失败");
+  const handleUpload = async (info: any) => {
+    const list = info?.fileList ?? (info?.file ? [info.file] : []);
+    for (const f of list) {
+      const raw = getRawFile(f);
+      if (!raw) {
+        message.error('无法读取本地文件');
+        continue;
+      }
+      try {
+        await ingestFile(raw);
+        message.success(`已导入 ${raw.name}`);
+        insertFileTag(senderRef, raw.name);
+        setUploadedNames((prev) => (prev.includes(raw.name) ? prev : [...prev, raw.name]));
+      } catch {
+        message.error('导入失败');
+      }
     }
   };
 
   /* === 提交消息 === */
   const handleSubmit = async (value: string) => {
-    const finalPrompt = await buildRagPrompt(value);
+    let finalPrompt = await buildRagPrompt(value);
+    try {
+      if (uploadedNames.length > 0) {
+        const resp = await (window as any).rag?.getDocsByNames?.({ names: uploadedNames, maxPerFile: 8, maxChars: 3000 });
+        const docsByName: Record<string, string[]> = resp?.docs || {};
+        const parts: string[] = [];
+        for (const name of uploadedNames) {
+          const docs = docsByName[name] || [];
+          if (docs.length > 0) {
+            parts.push(`【文件：${name}】\n${docs.join('\n---\n')}`);
+          }
+        }
+        if (parts.length > 0) {
+          finalPrompt = `请结合以下文件内容进行分析：\n\n${parts.join('\n\n')}\n\n问题：${value.trim()}`;
+        }
+      }
+    } catch {}
 
     if (onSubmit) {
       onSubmit(finalPrompt);
@@ -240,18 +270,8 @@ const SenderComponent: React.FC<{
         ref={attachmentsRef}
         beforeUpload={() => false}
         items={fileList}
-        onChange={async ({ fileList }) => {
+        onChange={({ fileList }) => {
           setFileList(fileList);
-          for (const f of fileList) {
-            const raw = (f as any)?.originFileObj || (f as any)?.file || null;
-            if (!raw) continue;
-            try {
-              await ingestFile(raw as File);
-              insertFileTag(senderRef, (raw as File).name || '未命名文件');
-            } catch {
-              message.error('导入失败');
-            }
-          }
         }}
         getDropContainer={() => senderRef.current?.nativeElement}
       />
