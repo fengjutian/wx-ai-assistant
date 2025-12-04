@@ -286,7 +286,7 @@ const SenderComponent: React.FC<{
       <Sender
         ref={senderRef}
         loading={loading}
-        header={senderHeader}
+        // header={senderHeader}
         placeholder="按回车发送"
         autoSize={{ minRows: 3, maxRows: 6 }}
         slotConfig={AGENTS[activeAgent].slotConfig}
