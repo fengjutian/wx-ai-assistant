@@ -10,29 +10,21 @@ const RagPage: React.FC = () => {
 
   const doUpload = async (file: File) => {
     try {
-      console.log('doUpload:start', { name: file.name, type: file.type, size: (file as any)?.size });
       const ab = await file.arrayBuffer();
-      console.log('doUpload:arrayBuffer', { bytes: ab.byteLength });
       const resp = await (window as any).rag?.ingestFileBlob?.({ name: file.name, type: file.type, data: ab });
-      console.log('doUpload:ingestFileBlob:resp', resp);
       if (resp?.error) {
-        console.error('doUpload:ingestFileBlob:error', resp.error);
         message.error(resp.error);
         return;
       }
       const items = resp?.items || [];
-       console.log('doUpload:chunks', { count: items.length });
       let success = 0;
       for (const item of items) {
         const ok = await (window as any).rag?.ingest?.(item);
-        console.log('doUpload:ingest:item', { id: item?.id, ok });
         if (ok) success += 1;
       }
-      console.log('doUpload:ingest:summary', { success, total: items.length });
       message.success(`已导入 ${file.name}（成功分块 ${success}/${items.length}）`);
       try {
         const lr = await (window as any).rag?.list?.();
-        console.log('doUpload:list:resp', lr);
         const files = (lr?.files || []) as Array<{ name: string; items: number }>;
         setUploaded(files);
       } catch {
@@ -40,7 +32,6 @@ const RagPage: React.FC = () => {
         setUploaded((prev) => [...prev, { name: file.name, items: success }]);
       }
     } catch {
-      console.error('doUpload:error');
       message.error('导入失败');
     }
   };
