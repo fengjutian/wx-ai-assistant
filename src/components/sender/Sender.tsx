@@ -1,16 +1,14 @@
 import {
-  AntDesignOutlined,
   ApiOutlined,
   CodeOutlined,
   EditOutlined,
   FileImageOutlined,
-  OpenAIOutlined,
   PaperClipOutlined,
   ProfileOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { Attachments, AttachmentsProps, Sender, SenderProps } from '@ant-design/x';
-import { Button, Divider, Dropdown, Flex, GetRef, MenuProps, message, Modal, Input, Form, Upload } from 'antd';
+import { Button, Divider, Flex, GetRef, MenuProps, message, Modal, Input, Form, Upload } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
 const Switch = Sender.Switch;
@@ -289,6 +287,32 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
                         await (window as any).rag?.ingest?.(item);
                       }
                       message.success(`已导入 ${raw.name}`);
+                      senderRef.current?.insert?.([
+                        {
+                          type: 'tag',
+                          key: `doc_${Date.now()}`,
+                          props: {
+                            label: (
+                              <Flex gap="small">
+                                <ProfileOutlined />
+                                {raw.name}
+                              </Flex>
+                            ),
+                            value: raw.name,
+                          },
+                        },
+                        { type: 'text', value: '\n' },
+                      ]);
+                      try {
+                        const el = (senderRef as any)?.current?.nativeElement as HTMLElement | undefined;
+                        const ta = el?.querySelector('textarea') as HTMLTextAreaElement | null;
+                        if (ta) {
+                          ta.value = `${ta.value}`;
+                          ta.focus();
+                          ta.selectionStart = ta.selectionEnd = ta.value.length;
+                          ta.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                      } catch {}
                     } catch (e) {
                       message.error(`导入失败`);
                     }
@@ -342,6 +366,8 @@ const SenderComponent: React.FC<SenderComponentProps> = ({ onPromptChange, promp
         slotConfig={AgentInfo[activeAgentKey].slotConfig}
         autoSize={{ minRows: 3, maxRows: 6 }}
       />
+
+
       <Modal
         title="模型配置"
         open={settingsOpen}
