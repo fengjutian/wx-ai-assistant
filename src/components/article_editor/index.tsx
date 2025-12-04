@@ -15,7 +15,6 @@ const ArticleEditor: React.FC = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* Markdown 编辑器 */}
       <div style={{ flex: 1, borderRight: "1px solid #eee" }}>
         <Editor
           height="100%"
@@ -24,7 +23,6 @@ const ArticleEditor: React.FC = () => {
         />
       </div>
 
-      {/* 实时预览 */}
       <div style={{ flex: 1, padding: 20, overflow: "auto" }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -47,7 +45,6 @@ const ArticleEditor: React.FC = () => {
         </ReactMarkdown>
       </div>
 
-      {/* 保存按钮 */}
       <button
         onClick={handleSave}
         style={{
